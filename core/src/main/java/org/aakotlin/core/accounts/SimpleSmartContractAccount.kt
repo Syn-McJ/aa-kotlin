@@ -74,17 +74,17 @@ open class SimpleSmartContractAccount(
         return FunctionEncoder.encode(function)
     }
 
-    override suspend fun encodeBatchExecute(txs: List<UserOperationCallData>): String {
-        TODO("Not yet implemented")
-    }
+//    override suspend fun encodeBatchExecute(txs: List<UserOperationCallData>): String {
+//        TODO("Not yet implemented")
+//    }
 
     override suspend fun signMessage(msg: ByteArray): ByteArray {
         return signer.signMessage(msg)
     }
 
-    override suspend fun signMessageWith6492(msg: ByteArray): ByteArray {
-        TODO("Not yet implemented")
-    }
+//    override suspend fun signMessageWith6492(msg: ByteArray): ByteArray {
+//        TODO("Not yet implemented")
+//    }
 
     override suspend fun getOwner(): SmartAccountSigner? {
         return signer

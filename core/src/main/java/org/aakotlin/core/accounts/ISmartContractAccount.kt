@@ -34,13 +34,13 @@ interface ISmartContractAccount {
      */
     suspend fun encodeExecute(target: Address, value: BigInteger, data: ByteArray): String
 
-    /**
-     * Encodes a batch of transactions to the account's batch execute function.
-     * NOTE: not all accounts support batching.
-     * @param txs - An Array of objects containing the target, value, and data for each transaction
-     * @returns the encoded callData for a UserOperation
-     */
-    suspend fun encodeBatchExecute(txs: List<UserOperationCallData>): String
+//    /**
+//     * Encodes a batch of transactions to the account's batch execute function.
+//     * NOTE: not all accounts support batching.
+//     * @param txs - An Array of objects containing the target, value, and data for each transaction
+//     * @returns the encoded callData for a UserOperation
+//     */
+//    suspend fun encodeBatchExecute(txs: List<UserOperationCallData>): String
 
     /**
      * @returns the nonce of the account
@@ -55,13 +55,13 @@ interface ISmartContractAccount {
      */
     suspend fun signMessage(msg: ByteArray): ByteArray
 
-    /**
-     * If the account is not deployed, it will sign the message and then wrap it in 6492 format
-     *
-     * @param msg - the message to sign
-     * @returns ths signature wrapped in 6492 format
-     */
-    suspend fun signMessageWith6492(msg: ByteArray): ByteArray
+//    /**
+//     * If the account is not deployed, it will sign the message and then wrap it in 6492 format
+//     *
+//     * @param msg - the message to sign
+//     * @returns ths signature wrapped in 6492 format
+//     */
+//    suspend fun signMessageWith6492(msg: ByteArray): ByteArray
 
     /**
      * @returns the address of the account
