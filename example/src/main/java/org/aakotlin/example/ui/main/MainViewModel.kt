@@ -24,6 +24,7 @@ import org.aakotlin.alchemy.middleware.AlchemyGasManagerConfig
 import org.aakotlin.alchemy.middleware.withAlchemyGasManager
 import org.aakotlin.alchemy.provider.AlchemyProvider
 import org.aakotlin.alchemy.provider.AlchemyProviderConfig
+import org.aakotlin.alchemy.provider.FeeOpts
 import org.aakotlin.core.Address
 import org.aakotlin.core.Chain
 import org.aakotlin.core.UserOperationCallData
@@ -66,9 +67,9 @@ class MainViewModel : ViewModel() {
         private const val ALCHEMY_TOKEN_SEPOLIA_ADDRESS = "0x6F3c1baeF15F2Ac6eD52ef897f60cac0B10d90C3"
 
         // replace with your Alchemy API key
-        private const val ALCHEMY_API_KEY = ...
+        private const val ALCHEMY_API_KEY = "VL04Y5WbMvKHO05PIKtTsmifkEaz8UYU"
         // replace with your Alchemy gas policy ID
-        private const val ALCHEMY_GAS_POLICY_ID = ...
+        private const val ALCHEMY_GAS_POLICY_ID = "fc1342bf-c475-43b8-af42-d7b3cd189e59"
 
         // replace with your Web3Auth Client ID
         // these IDs are from Web3Auth example
@@ -161,7 +162,7 @@ class MainViewModel : ViewModel() {
             AlchemyProviderConfig(
                 chain,
                 ConnectionConfig(ALCHEMY_API_KEY, null, null),
-                SmartAccountProviderOpts(50, 500),
+                SmartAccountProviderOpts(50, 500)
             )
         ).withAlchemyGasManager(
             AlchemyGasManagerConfig(ALCHEMY_GAS_POLICY_ID)

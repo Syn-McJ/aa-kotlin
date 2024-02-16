@@ -149,7 +149,7 @@ open class SmartAccountProvider(
         return this
     }
 
-    /*
+    /**
      * Note that the connected account's entryPointAddress always takes the precedence
      */
     fun getEntryPointAddress(): Address {
