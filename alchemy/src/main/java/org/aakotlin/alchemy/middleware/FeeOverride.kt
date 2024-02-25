@@ -12,4 +12,10 @@ data class FeeOverride(
     val callGasLimit: String? = null,
     val verificationGasLimit: String? = null,
     val preVerificationGas: String? = null
-)
+) {
+    val isEmpty = maxFeePerGas == null &&
+        maxPriorityFeePerGas == null &&
+        callGasLimit == null &&
+        verificationGasLimit == null &&
+        preVerificationGas == null
+}
