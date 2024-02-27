@@ -14,5 +14,4 @@ data class AlchemyProviderConfig(
     val chain: Chain,
     val connectionConfig: ConnectionConfig,
     val opts: SmartAccountProviderOpts? = null,
-    val feeOpts: FeeOpts? = null
 )

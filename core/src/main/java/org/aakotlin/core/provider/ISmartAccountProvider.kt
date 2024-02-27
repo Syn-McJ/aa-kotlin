@@ -7,13 +7,16 @@
 package org.aakotlin.core.provider
 
 import org.aakotlin.core.Address
+import org.aakotlin.core.SendUserOperationResult
 import org.aakotlin.core.UserOperationCallData
+import org.aakotlin.core.UserOperationOverrides
 import org.aakotlin.core.UserOperationReceipt
+import org.aakotlin.core.UserOperationRequest
 import org.aakotlin.core.UserOperationStruct
+import org.aakotlin.core.client.Erc4337Client
 
-typealias AccountMiddlewareFn = suspend (UserOperationStruct) -> UserOperationStruct
+typealias ClientMiddlewareFn = suspend (Erc4337Client, UserOperationStruct, UserOperationOverrides) -> UserOperationStruct
 
-// Based on https://github.com/alchemyplatform/aa-sdk/blob/main/packages/core/src/provider/types.ts#L95
 interface ISmartAccountProvider {
     /**
      * @returns boolean flag indicating if the account is connected
@@ -36,17 +39,37 @@ interface ISmartAccountProvider {
      * 5. customMiddleware -- allows you to override any of the results returned by previous middlewares
      *
      * @param data - either {@link UserOperationCallData} or {@link BatchUserOperationCallData}
+     * @param overrides - optional {@link UserOperationOverrides}
      * @returns - {@link SendUserOperationResult} containing the hash and request
      */
-    suspend fun sendUserOperation(data: UserOperationCallData): String
+    suspend fun sendUserOperation(
+        data: UserOperationCallData,
+        overrides: UserOperationOverrides? = null
+    ): SendUserOperationResult
+
+    /**
+     * Attempts to drop and replace an existing user operation by increasing fees
+     *
+     * @param uoToDrop - an existing user operation request returned by `sendUserOperation`
+     * @param overrides - optional {@link UserOperationOverrides}
+     * @returns - {@link SendUserOperationResult} containing the hash and request
+     */
+    suspend fun dropAndReplaceUserOperation(
+        uoToDrop: UserOperationRequest,
+        overrides: UserOperationOverrides? = null
+    ): SendUserOperationResult
 
     /**
      * Allows you to get the unsigned UserOperation struct with all of the middleware run on it
      *
      * @param data - either {@link UserOperationCallData} or {@link BatchUserOperationCallData}
+     * @param overrides - optional {@link UserOperationOverrides}
      * @returns - {@link UserOperationStruct} resulting from the middleware pipeline
      */
-    suspend fun buildUserOperation(data: UserOperationCallData): UserOperationStruct
+    suspend fun buildUserOperation(
+        data: UserOperationCallData,
+        overrides: UserOperationOverrides? = null
+    ): UserOperationStruct
 
     /**
      * This will wait for the user operation to be included in a transaction that's been mined.
@@ -63,19 +86,19 @@ interface ISmartAccountProvider {
      * Overrides the feeDataGetter middleware which is used for setting the fee fields on the UserOperation
      * prior to execution.
      *
-     * @param override - a function for overriding the default feeDataGetter middleware
+     * @param feeDataGetter - a function for overriding the default feeDataGetter middleware
      * @returns
      */
-    fun withFeeDataGetter(feeDataGetter: AccountMiddlewareFn): ISmartAccountProvider
+    fun withFeeDataGetter(feeDataGetter: ClientMiddlewareFn): ISmartAccountProvider
 
     /**
      * Overrides the gasEstimator middleware which is used for setting the gasLimit fields on the UserOperation
      * prior to execution.
      *
-     * @param override - a function for overriding the default gas estimator middleware
+     * @param gasEstimator - a function for overriding the default gas estimator middleware
      * @returns
      */
-    fun withGasEstimator(gasEstimator: AccountMiddlewareFn): ISmartAccountProvider
+    fun withGasEstimator(gasEstimator: ClientMiddlewareFn): ISmartAccountProvider
 
     /**
      * This method allows you to override the default dummy paymaster data middleware and get paymaster
@@ -90,7 +113,7 @@ interface ISmartAccountProvider {
      * @returns an update instance of this, which now uses the new middleware
      */
     fun withPaymasterMiddleware(
-        dummyPaymasterDataMiddleware: AccountMiddlewareFn?,
-        paymasterDataMiddleware: AccountMiddlewareFn?,
+        dummyPaymasterDataMiddleware: ClientMiddlewareFn?,
+        paymasterDataMiddleware: ClientMiddlewareFn?,
     ): ISmartAccountProvider
 }

@@ -16,11 +16,11 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${rootProject.extra["coroutinesVersion"]}")
-    implementation("org.web3j:core:${rootProject.extra["web3jVersion"]}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
+    implementation("org.web3j:core:4.10.3")
 
     // Tests
     testImplementation("org.testng:testng:6.9.6")
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${rootProject.extra["coroutinesVersion"]}")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
 }

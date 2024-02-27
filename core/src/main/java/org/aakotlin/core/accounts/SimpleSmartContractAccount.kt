@@ -8,7 +8,6 @@ package org.aakotlin.core.accounts
 
 import org.aakotlin.core.Address
 import org.aakotlin.core.Chain
-import org.aakotlin.core.UserOperationCallData
 import org.aakotlin.core.client.Erc4337Client
 import org.aakotlin.core.signer.SmartAccountSigner
 import org.aakotlin.core.util.concatHex
@@ -37,7 +36,6 @@ open class SimpleSmartContractAccount(
 ) {
     override suspend fun getAccountInitCode(): String {
         val address = signer.getAddress()
-        println(address)
         val function = Function(
             "createAccount",
             listOf(

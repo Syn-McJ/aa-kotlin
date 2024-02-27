@@ -43,20 +43,25 @@ fun AlchemyProvider.withAlchemyGasManager(
     config: AlchemyGasManagerConfig,
     gasEstimationOptions: AlchemyGasEstimationOptions? = null
 ) = apply {
-    val fallbackGasEstimator = gasEstimationOptions?.fallbackGasEstimator ?: gasEstimator
-    val fallbackFeeDataGetter = gasEstimationOptions?.fallbackFeeDataGetter ?: feeDataGetter
+    val fallbackFeeDataGetter = gasEstimationOptions?.fallbackFeeDataGetter ?: alchemyFeeEstimator
+    val fallbackGasEstimator = gasEstimationOptions?.fallbackGasEstimator ?: ::defaultGasEstimator
     val disableGasEstimation = gasEstimationOptions?.disableGasEstimation ?: false
 
     withGasEstimator(
         if (disableGasEstimation) {
             fallbackGasEstimator
         } else {
-            { uoStruct, overrides ->
-                // no-op gas estimator
+            { client, uoStruct, overrides ->
                 uoStruct.apply {
-                    callGasLimit = 0.toBigInteger()
-                    preVerificationGas = 0.toBigInteger()
-                    verificationGasLimit = 0.toBigInteger()
+                    callGasLimit = BigInteger.ZERO
+                    preVerificationGas = BigInteger.ZERO
+                    verificationGasLimit = BigInteger.ZERO
+                }
+
+                if (!overrides.paymasterAndData.isNullOrEmpty()) {
+                    fallbackGasEstimator(client, uoStruct, overrides)
+                } else {
+                    uoStruct
                 }
             }
         }
@@ -66,14 +71,14 @@ fun AlchemyProvider.withAlchemyGasManager(
         if (disableGasEstimation) {
             fallbackFeeDataGetter
         } else {
-            { struct, overrides ->
+            { client, struct, overrides ->
                 var newMaxFeePerGas = struct.maxFeePerGas ?: 0.toBigInteger()
                 var newMaxPriorityFeePerGas = struct.maxPriorityFeePerGas ?: 0.toBigInteger()
 
                 // but if user is bypassing paymaster to fallback to having the account to pay the gas (one-off override),
                 // we cannot delegate gas estimation to the bundler because paymaster middleware will not be called
                 if (overrides.paymasterAndData == "0x") {
-                    val result = fallbackFeeDataGetter(struct, overrides)
+                    val result = fallbackFeeDataGetter(client, struct, overrides)
                     newMaxFeePerGas = result.maxFeePerGas ?: newMaxFeePerGas
                     newMaxPriorityFeePerGas = result.maxPriorityFeePerGas ?: newMaxPriorityFeePerGas
                 }
@@ -106,13 +111,12 @@ fun requestPaymasterAndData(
     config: AlchemyGasManagerConfig
 ): AlchemyProvider = provider.apply {
     withPaymasterMiddleware(
-        { struct, _ ->
+        { _, struct, _ ->
             struct.apply {
                 paymasterAndData = dummyPaymasterAndData(provider.chain.id)
             }
         },
-        { struct, _ ->
-            println("SENDUSEROPERATION alchemy_requestPaymasterAndData")
+        { _, struct, _ ->
             val data = (provider.rpcClient as AlchemyClient).requestPaymasterAndData(
                 PaymasterAndDataParams(
                     config.policyId,
@@ -140,12 +144,12 @@ fun requestGasAndPaymasterData(
     config: AlchemyGasManagerConfig
 ): AlchemyProvider = provider.apply {
     withPaymasterMiddleware(
-        { struct, _ ->
+        { _, struct, _ ->
             struct.apply {
                 paymasterAndData = dummyPaymasterAndData(provider.chain.id)
             }
         },
-        { struct, overrides ->
+        { _, struct, overrides ->
             val userOperation = struct.toUserOperationRequest()
             val feeOverride = FeeOverride(
                 maxFeePerGas = overrides.maxFeePerGas?.let(Numeric::encodeQuantity),
@@ -155,7 +159,6 @@ fun requestGasAndPaymasterData(
                 preVerificationGas = overrides.preVerificationGas?.let(Numeric::encodeQuantity)
             )
 
-            println("SENDUSEROPERATION alchemy_requestGasAndPaymasterAndData")
             val result = (provider.rpcClient as AlchemyClient).requestGasAndPaymasterAndData(
                 PaymasterAndDataParams(
                     config.policyId,
@@ -166,7 +169,6 @@ fun requestGasAndPaymasterData(
                 )
             ).await().result
 
-            println("SENDUSEROPERATION result.callGasLimit: ${result.callGasLimit}")
             struct.apply {
                 paymasterAndData = result.paymasterAndData
                 callGasLimit = result.callGasLimit

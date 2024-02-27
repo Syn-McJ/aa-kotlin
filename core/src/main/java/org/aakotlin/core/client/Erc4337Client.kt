@@ -51,8 +51,6 @@ interface Erc4337Client : Web3j {
      *
      * - Docs: https://viem.sh/docs/actions/public/estimateFeesPerGas.html
      *
-     * @param client - Client to use
-     * @param parameters - {@link EstimateFeesPerGasParameters}
      * @returns An estimate (in wei) for the fees per gas. {@link EstimateFeesPerGasReturnType}
      */
     suspend fun estimateFeesPerGas(chain: Chain): FeeValuesEIP1559
