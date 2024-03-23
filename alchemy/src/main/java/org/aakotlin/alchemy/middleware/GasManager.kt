@@ -52,11 +52,9 @@ fun AlchemyProvider.withAlchemyGasManager(
             fallbackGasEstimator
         } else {
             { client, uoStruct, overrides ->
-                uoStruct.apply {
-                    callGasLimit = BigInteger.ZERO
-                    preVerificationGas = BigInteger.ZERO
-                    verificationGasLimit = BigInteger.ZERO
-                }
+                uoStruct.callGasLimit = BigInteger.ZERO
+                uoStruct.preVerificationGas = BigInteger.ZERO
+                uoStruct.verificationGasLimit = BigInteger.ZERO
 
                 if (!overrides.paymasterAndData.isNullOrEmpty()) {
                     fallbackGasEstimator(client, uoStruct, overrides)
@@ -103,8 +101,9 @@ fun AlchemyProvider.withAlchemyGasManager(
  * this middleware if you want more customization over the gas and fee estimation middleware, including setting
  * non-default buffer values for the fee/gas estimation.
  *
+ * @param provider - the smart account provider to override to use the paymaster middleware
  * @param config - the alchemy gas manager configuration
- * @returns middleware overrides for paymaster middlewares
+ * @returns the provider augmented to use the paymaster middleware
  */
 fun requestPaymasterAndData(
     provider: AlchemyProvider,
@@ -136,8 +135,9 @@ fun requestPaymasterAndData(
  * This uses the alchemy RPC method: `alchemy_requestGasAndPaymasterAndData` to get all of the gas estimates + paymaster data
  * in one RPC call. It will no-op the gas estimator and fee data getter middleware and set a custom middleware that makes the RPC call.
  *
+ * @param provider - the smart account provider to override to use the paymaster middleware
  * @param config - the alchemy gas manager configuration
- * @returns middleware overrides for paymaster middlewares
+ * @returns the provider augmented to use the paymaster middleware
  */
 fun requestGasAndPaymasterData(
     provider: AlchemyProvider,

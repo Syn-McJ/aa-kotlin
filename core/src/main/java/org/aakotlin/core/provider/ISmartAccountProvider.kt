@@ -38,9 +38,9 @@ interface ISmartAccountProvider {
      * 4. paymasterMiddleware -- used to set paymasterAndData. (default: "0x")
      * 5. customMiddleware -- allows you to override any of the results returned by previous middlewares
      *
-     * @param data - either {@link UserOperationCallData} or {@link BatchUserOperationCallData}
-     * @param overrides - optional {@link UserOperationOverrides}
-     * @returns - {@link SendUserOperationResult} containing the hash and request
+     * @param data - [UserOperationCallData]
+     * @param overrides - optional [UserOperationOverrides]
+     * @returns - [SendUserOperationResult] containing the hash and request
      */
     suspend fun sendUserOperation(
         data: UserOperationCallData,
@@ -48,11 +48,23 @@ interface ISmartAccountProvider {
     ): SendUserOperationResult
 
     /**
+     * Sends several user operations using the connected account.
+     * see [sendUserOperation] for more details.
+     * @param data - list of [UserOperationCallData]
+     * @param overrides - optional [UserOperationOverrides]
+     * @returns - [SendUserOperationResult] containing the hash and request
+     */
+    suspend fun sendUserOperation(
+        data: List<UserOperationCallData>,
+        overrides: UserOperationOverrides? = null
+    ): SendUserOperationResult
+
+    /**
      * Attempts to drop and replace an existing user operation by increasing fees
      *
-     * @param uoToDrop - an existing user operation request returned by `sendUserOperation`
-     * @param overrides - optional {@link UserOperationOverrides}
-     * @returns - {@link SendUserOperationResult} containing the hash and request
+     * @param uoToDrop - an existing user operation request returned by [sendUserOperation]
+     * @param overrides - optional [UserOperationOverrides]
+     * @returns - [SendUserOperationResult] containing the hash and request
      */
     suspend fun dropAndReplaceUserOperation(
         uoToDrop: UserOperationRequest,
@@ -62,12 +74,24 @@ interface ISmartAccountProvider {
     /**
      * Allows you to get the unsigned UserOperation struct with all of the middleware run on it
      *
-     * @param data - either {@link UserOperationCallData} or {@link BatchUserOperationCallData}
-     * @param overrides - optional {@link UserOperationOverrides}
-     * @returns - {@link UserOperationStruct} resulting from the middleware pipeline
+     * @param data - [UserOperationCallData]
+     * @param overrides - optional [UserOperationOverrides]
+     * @returns - [UserOperationStruct] resulting from the middleware pipeline
      */
     suspend fun buildUserOperation(
         data: UserOperationCallData,
+        overrides: UserOperationOverrides? = null
+    ): UserOperationStruct
+
+    /**
+     * Allows you to get the unsigned UserOperation struct with all of the middleware run on it
+     *
+     * @param data - list of [UserOperationCallData]
+     * @param overrides - optional [UserOperationOverrides]
+     * @returns - [UserOperationStruct] resulting from the middleware pipeline
+     */
+    suspend fun buildUserOperation(
+        data: List<UserOperationCallData>,
         overrides: UserOperationOverrides? = null
     ): UserOperationStruct
 

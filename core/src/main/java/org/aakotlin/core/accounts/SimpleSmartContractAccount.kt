@@ -8,6 +8,7 @@ package org.aakotlin.core.accounts
 
 import org.aakotlin.core.Address
 import org.aakotlin.core.Chain
+import org.aakotlin.core.UserOperationCallData
 import org.aakotlin.core.client.Erc4337Client
 import org.aakotlin.core.signer.SmartAccountSigner
 import org.aakotlin.core.util.concatHex
@@ -72,9 +73,21 @@ open class SimpleSmartContractAccount(
         return FunctionEncoder.encode(function)
     }
 
-//    override suspend fun encodeBatchExecute(txs: List<UserOperationCallData>): String {
-//        TODO("Not yet implemented")
-//    }
+    override suspend fun encodeBatchExecute(txs: List<UserOperationCallData>): String {
+        val targets = txs.map { org.web3j.abi.datatypes.Address(it.target.address) }
+        val datas = txs.map { DynamicBytes(it.data) }
+
+        val function = Function(
+            "executeBatch",
+            listOf(
+                org.web3j.abi.datatypes.DynamicArray(org.web3j.abi.datatypes.Address::class.java, targets),
+                org.web3j.abi.datatypes.DynamicArray(DynamicBytes::class.java, datas),
+            ),
+            listOf()
+        )
+
+        return FunctionEncoder.encode(function)
+    }
 
     override suspend fun signMessage(msg: ByteArray): ByteArray {
         return signer.signMessage(msg)

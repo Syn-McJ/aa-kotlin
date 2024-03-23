@@ -80,6 +80,16 @@ open class SmartAccountProvider(
         return sendUserOperation(uoStruct)
     }
 
+    override suspend fun sendUserOperation(
+        data: List<UserOperationCallData>,
+        overrides: UserOperationOverrides?
+    ): SendUserOperationResult {
+        this.account ?: throw IllegalStateException("Account not connected")
+
+        val uoStruct = this.buildUserOperation(data, overrides)
+        return sendUserOperation(uoStruct)
+    }
+
     override suspend fun dropAndReplaceUserOperation(
         uoToDrop: UserOperationRequest,
         overrides: UserOperationOverrides?
@@ -131,6 +141,25 @@ open class SmartAccountProvider(
                     data.value ?: BigInteger.ZERO,
                     data.data
                 ),
+                signature = account.getDummySignature(),
+                paymasterAndData = "0x",
+            ),
+            overrides ?: UserOperationOverrides()
+        )
+    }
+
+    override suspend fun buildUserOperation(
+        data: List<UserOperationCallData>,
+        overrides: UserOperationOverrides?
+    ): UserOperationStruct {
+        val account = this.account ?: throw IllegalStateException("Account not connected")
+
+        return runMiddlewareStack(
+            UserOperationStruct(
+                initCode = account.getInitCode(),
+                sender = getAddress().address,
+                nonce = account.getNonce(),
+                callData = account.encodeBatchExecute(data),
                 signature = account.getDummySignature(),
                 paymasterAndData = "0x",
             ),
@@ -251,7 +280,7 @@ open class SmartAccountProvider(
         return struct
     }
 
-    private suspend fun defaultOverridePaymasterDataMiddleware(
+    protected open suspend fun defaultOverridePaymasterDataMiddleware(
         client: Erc4337Client,
         struct: UserOperationStruct,
         overrides: UserOperationOverrides
