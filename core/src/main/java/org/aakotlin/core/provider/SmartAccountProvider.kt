@@ -9,11 +9,15 @@ package org.aakotlin.core.provider
 import kotlinx.coroutines.delay
 import org.aakotlin.core.Address
 import org.aakotlin.core.Chain
+import org.aakotlin.core.SendUserOperationResult
 import org.aakotlin.core.UserOperationCallData
+import org.aakotlin.core.UserOperationOverrides
 import org.aakotlin.core.UserOperationReceipt
+import org.aakotlin.core.UserOperationRequest
 import org.aakotlin.core.UserOperationStruct
 import org.aakotlin.core.accounts.ISmartContractAccount
 import org.aakotlin.core.client.Erc4337Client
+import org.aakotlin.core.client.EthEstimateUserOperationGas
 import org.aakotlin.core.client.createPublicErc4337Client
 import org.aakotlin.core.util.Defaults
 import org.aakotlin.core.util.await
@@ -21,6 +25,7 @@ import org.aakotlin.core.util.bigIntPercent
 import org.aakotlin.core.util.getUserOperationHash
 import org.aakotlin.core.util.isValidRequest
 import org.aakotlin.core.util.toUserOperationRequest
+import org.web3j.utils.Numeric
 import java.math.BigInteger
 import kotlin.math.pow
 import kotlin.random.Random
@@ -32,29 +37,19 @@ open class SmartAccountProvider(
     val chain: Chain,
     private val opts: SmartAccountProviderOpts? = null,
 ) : ISmartAccountProvider {
-    companion object {
-        private val minPriorityFeePerBidDefaults =
-            mapOf<Long, Long>(
-                Chain.Arbitrum.id to 10_000_000,
-                Chain.ArbitrumGoerli.id to 10_000_000,
-                Chain.ArbitrumSepolia.id to 10_000_000,
-            )
-    }
-
     val rpcClient: Erc4337Client
 
     private var account: ISmartContractAccount? = null
-    private var gasEstimator: AccountMiddlewareFn = ::defaultGasEstimator
-    private var feeDataGetter: AccountMiddlewareFn = ::defaultFeeDataGetter
-    private var paymasterDataMiddleware: AccountMiddlewareFn = ::defaultPaymasterDataMiddleware
-    private var dummyPaymasterDataMiddleware: AccountMiddlewareFn = ::defaultDummyPaymasterDataMiddleware
-
-    private val minPriorityFeePerBid =
-        BigInteger.valueOf(
-            opts?.minPriorityFeePerBid
-                ?: minPriorityFeePerBidDefaults[chain.id]
-                ?: 100_000_000,
-        )
+    private var gasEstimator: ClientMiddlewareFn = ::defaultGasEstimator
+        private set
+    private var feeDataGetter: ClientMiddlewareFn = ::defaultFeeDataGetter
+        private set
+    private var paymasterDataMiddleware: ClientMiddlewareFn = ::defaultPaymasterDataMiddleware
+        private set
+    private var overridePaymasterDataMiddleware: ClientMiddlewareFn = ::defaultOverridePaymasterDataMiddleware
+        private set
+    private var dummyPaymasterDataMiddleware: ClientMiddlewareFn = ::defaultDummyPaymasterDataMiddleware
+        private set
 
     override val isConnected: Boolean
         get() = this.account != null
@@ -75,14 +70,65 @@ open class SmartAccountProvider(
         return account.getAddress()
     }
 
-    override suspend fun sendUserOperation(data: UserOperationCallData): String {
+    override suspend fun sendUserOperation(
+        data: UserOperationCallData,
+        overrides: UserOperationOverrides?
+    ): SendUserOperationResult {
         this.account ?: throw IllegalStateException("Account not connected")
 
-        val uoStruct = this.buildUserOperation(data)
+        val uoStruct = this.buildUserOperation(data, overrides)
         return sendUserOperation(uoStruct)
     }
 
-    override suspend fun buildUserOperation(data: UserOperationCallData): UserOperationStruct {
+    override suspend fun sendUserOperation(
+        data: List<UserOperationCallData>,
+        overrides: UserOperationOverrides?
+    ): SendUserOperationResult {
+        this.account ?: throw IllegalStateException("Account not connected")
+
+        val uoStruct = this.buildUserOperation(data, overrides)
+        return sendUserOperation(uoStruct)
+    }
+
+    override suspend fun dropAndReplaceUserOperation(
+        uoToDrop: UserOperationRequest,
+        overrides: UserOperationOverrides?
+    ): SendUserOperationResult {
+        val uoToSubmit = UserOperationStruct(
+            initCode = uoToDrop.initCode,
+            sender = uoToDrop.sender,
+            nonce = Numeric.decodeQuantity(uoToDrop.nonce),
+            callData = uoToDrop.callData,
+            signature = Numeric.hexStringToByteArray(uoToDrop.signature),
+            paymasterAndData = "0x",
+        )
+
+        // Run once to get the fee estimates
+        // This can happen at any part of the middleware stack, so we want to run it all
+        val estimates = this.runMiddlewareStack(uoToSubmit, overrides ?: UserOperationOverrides())
+        val newOverrides = UserOperationOverrides(
+            maxFeePerGas = (estimates.maxFeePerGas ?: BigInteger.ZERO).max(
+                bigIntPercent(
+                    Numeric.decodeQuantity(uoToDrop.maxFeePerGas),
+                    BigInteger.valueOf(110),
+                )
+            ),
+            maxPriorityFeePerGas = (estimates.maxPriorityFeePerGas ?: BigInteger.ZERO).max(
+                bigIntPercent(
+                    Numeric.decodeQuantity(uoToDrop.maxPriorityFeePerGas),
+                    BigInteger.valueOf(110),
+                )
+            )
+        )
+
+        val uoToSend = runMiddlewareStack(uoToSubmit, newOverrides)
+        return sendUserOperation(uoToSend)
+    }
+
+    override suspend fun buildUserOperation(
+        data: UserOperationCallData,
+        overrides: UserOperationOverrides?
+    ): UserOperationStruct {
         val account = this.account ?: throw IllegalStateException("Account not connected")
 
         return runMiddlewareStack(
@@ -90,15 +136,34 @@ open class SmartAccountProvider(
                 initCode = account.getInitCode(),
                 sender = getAddress().address,
                 nonce = account.getNonce(),
-                callData =
-                    account.encodeExecute(
-                        data.target,
-                        data.value ?: BigInteger.ZERO,
-                        data.data,
-                    ),
+                callData = account.encodeExecute(
+                    data.target,
+                    data.value ?: BigInteger.ZERO,
+                    data.data
+                ),
                 signature = account.getDummySignature(),
                 paymasterAndData = "0x",
             ),
+            overrides ?: UserOperationOverrides()
+        )
+    }
+
+    override suspend fun buildUserOperation(
+        data: List<UserOperationCallData>,
+        overrides: UserOperationOverrides?
+    ): UserOperationStruct {
+        val account = this.account ?: throw IllegalStateException("Account not connected")
+
+        return runMiddlewareStack(
+            UserOperationStruct(
+                initCode = account.getInitCode(),
+                sender = getAddress().address,
+                nonce = account.getNonce(),
+                callData = account.encodeBatchExecute(data),
+                signature = account.getDummySignature(),
+                paymasterAndData = "0x",
+            ),
+            overrides ?: UserOperationOverrides()
         )
     }
 
@@ -124,19 +189,19 @@ open class SmartAccountProvider(
         throw Exception("Failed to find transaction for User Operation")
     }
 
-    override fun withFeeDataGetter(feeDataGetter: AccountMiddlewareFn): ISmartAccountProvider {
+    override fun withFeeDataGetter(feeDataGetter: ClientMiddlewareFn): ISmartAccountProvider {
         this.feeDataGetter = feeDataGetter
         return this
     }
 
-    override fun withGasEstimator(gasEstimator: AccountMiddlewareFn): ISmartAccountProvider {
+    override fun withGasEstimator(gasEstimator: ClientMiddlewareFn): ISmartAccountProvider {
         this.gasEstimator = gasEstimator
         return this
     }
 
     override fun withPaymasterMiddleware(
-        dummyPaymasterDataMiddleware: AccountMiddlewareFn?,
-        paymasterDataMiddleware: AccountMiddlewareFn?,
+        dummyPaymasterDataMiddleware: ClientMiddlewareFn?,
+        paymasterDataMiddleware: ClientMiddlewareFn?,
     ): ISmartAccountProvider {
         if (dummyPaymasterDataMiddleware != null) {
             this.dummyPaymasterDataMiddleware = dummyPaymasterDataMiddleware
@@ -158,7 +223,7 @@ open class SmartAccountProvider(
             ?: Defaults.getDefaultEntryPointAddress(this.chain)
     }
 
-    private suspend fun sendUserOperation(struct: UserOperationStruct): String {
+    private suspend fun sendUserOperation(struct: UserOperationStruct): SendUserOperationResult {
         val account = this.account ?: throw IllegalStateException("Account not connected")
 
         if (!struct.isValidRequest()) {
@@ -176,73 +241,115 @@ open class SmartAccountProvider(
         )
 
         val request = struct.toUserOperationRequest()
-        return rpcClient.sendUserOperation(
+        val hash = rpcClient.sendUserOperation(
             request,
             this.getEntryPointAddress().address,
         ).await().result
+
+        return SendUserOperationResult(hash, request)
     }
 
-    private suspend fun runMiddlewareStack(struct: UserOperationStruct): UserOperationStruct {
+    private suspend fun runMiddlewareStack(
+        struct: UserOperationStruct,
+        overrides: UserOperationOverrides
+    ): UserOperationStruct {
         // Reversed order - dummyPaymasterDataMiddleware is called first
-        val asyncPipe =
-            paymasterDataMiddleware chain
-                gasEstimator chain
-                feeDataGetter chain
-                dummyPaymasterDataMiddleware
 
-        return asyncPipe(struct)
+        val asyncPipe = if (overrides.paymasterAndData != null) {
+            overridePaymasterDataMiddleware
+        } else {
+            paymasterDataMiddleware
+        } chain
+          gasEstimator chain
+          feeDataGetter chain
+          dummyPaymasterDataMiddleware
+
+        return asyncPipe(rpcClient, struct, overrides)
     }
 
     // These are dependent on the specific paymaster being used
     // You should implement your own middleware to override these
     // or extend this class and provider your own implementation
 
-    protected open suspend fun defaultDummyPaymasterDataMiddleware(struct: UserOperationStruct): UserOperationStruct {
+    protected open suspend fun defaultDummyPaymasterDataMiddleware(
+        client: Erc4337Client,
+        struct: UserOperationStruct,
+        overrides: UserOperationOverrides
+    ): UserOperationStruct {
         struct.paymasterAndData = "0x"
         return struct
     }
 
-    protected open suspend fun defaultPaymasterDataMiddleware(struct: UserOperationStruct): UserOperationStruct {
+    protected open suspend fun defaultOverridePaymasterDataMiddleware(
+        client: Erc4337Client,
+        struct: UserOperationStruct,
+        overrides: UserOperationOverrides
+    ): UserOperationStruct {
+        struct.paymasterAndData = overrides.paymasterAndData ?: "0x"
+        return struct
+    }
+
+    protected open suspend fun defaultPaymasterDataMiddleware(
+        client: Erc4337Client,
+        struct: UserOperationStruct,
+        overrides: UserOperationOverrides
+    ): UserOperationStruct {
         struct.paymasterAndData = "0x"
         return struct
     }
 
-    protected open suspend fun defaultFeeDataGetter(struct: UserOperationStruct): UserOperationStruct {
-        val maxPriorityFeePerGas = rpcClient.ethMaxPriorityFeePerGas().await().maxPriorityFeePerGas
+    protected open suspend fun defaultFeeDataGetter(
+        client: Erc4337Client,
+        struct: UserOperationStruct,
+        overrides: UserOperationOverrides
+    ): UserOperationStruct {
+        // maxFeePerGas must be at least the sum of maxPriorityFeePerGas and baseFee
+        // so we need to accommodate for the fee option applied maxPriorityFeePerGas for the maxFeePerGas
+        //
+        // Note that if maxFeePerGas is not at least the sum of maxPriorityFeePerGas and required baseFee
+        // after applying the fee options, then the transaction will fail
+        //
+        // Refer to https://docs.alchemy.com/docs/maxpriorityfeepergas-vs-maxfeepergas
+        // for more information about maxFeePerGas and maxPriorityFeePerGas
         val feeData = rpcClient.estimateFeesPerGas(chain)
+        val maxPriorityFeePerGas = overrides.maxPriorityFeePerGas ?:
+            rpcClient.ethMaxPriorityFeePerGas().await().maxPriorityFeePerGas
 
-        // set maxPriorityFeePerGasBid to the max between 33% added priority fee estimate and
-        // the min priority fee per gas set for the provider
-        val maxPriorityFeePerGasBid =
-            bigIntPercent(
-                maxPriorityFeePerGas,
-                BigInteger.valueOf(100 + (opts?.maxPriorityFeePerGasEstimateBuffer ?: 33)),
-            ).max(this.minPriorityFeePerBid)
+        val maxFeePerGas = overrides.maxFeePerGas ?:
+            (feeData.maxFeePerGas - feeData.maxPriorityFeePerGas + maxPriorityFeePerGas)
 
-        val maxFeePerGasBid = feeData.maxFeePerGas - feeData.maxPriorityFeePerGas + maxPriorityFeePerGasBid
-
-        struct.maxFeePerGas = maxFeePerGasBid
-        struct.maxPriorityFeePerGas = maxPriorityFeePerGasBid
+        struct.maxFeePerGas = maxFeePerGas
+        struct.maxPriorityFeePerGas = maxPriorityFeePerGas
 
         return struct
     }
 
-    protected open suspend fun defaultGasEstimator(struct: UserOperationStruct): UserOperationStruct {
-        val request = struct.toUserOperationRequest()
-        val estimates =
-            rpcClient.estimateUserOperationGas(
+    open suspend fun defaultGasEstimator(
+        client: Erc4337Client,
+        struct: UserOperationStruct,
+        overrides: UserOperationOverrides
+    ): UserOperationStruct {
+        var estimates: EthEstimateUserOperationGas.EstimateUserOperationGas? = null
+
+        if (overrides.callGasLimit == null ||
+            overrides.verificationGasLimit == null ||
+            overrides.preVerificationGas == null
+        ) {
+            val request = struct.toUserOperationRequest()
+            estimates = rpcClient.estimateUserOperationGas(
                 request,
-                this.getEntryPointAddress().address,
+                this.getEntryPointAddress().address
             ).await().result
+        }
 
-        struct.preVerificationGas = estimates.preVerificationGas
-        struct.verificationGasLimit = estimates.verificationGasLimit
-        struct.callGasLimit = estimates.callGasLimit
+        struct.preVerificationGas = overrides.preVerificationGas ?: estimates!!.preVerificationGas
+        struct.verificationGasLimit = overrides.verificationGasLimit ?: estimates!!.verificationGasLimit
+        struct.callGasLimit = overrides.callGasLimit ?: estimates!!.callGasLimit
 
         return struct
     }
 
-    private infix fun <A, B, C> (suspend (B) -> C).chain(g: suspend (A) -> B): suspend (A) -> C {
-        return { x -> this(g(x)) }
+    private infix fun (ClientMiddlewareFn).chain(g: ClientMiddlewareFn): ClientMiddlewareFn {
+        return { x, y, z -> this(x, g(x, y, z), z) }
     }
 }

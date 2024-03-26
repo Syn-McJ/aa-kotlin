@@ -14,6 +14,13 @@ import org.web3j.crypto.Sign
 class LocalAccountSigner(
     override val credentials: Credentials
 ) : SmartAccountSigner {
+    companion object {
+        fun privateKeyToAccountSigner(key: String): LocalAccountSigner {
+            val owner = Credentials.create(key)
+            return LocalAccountSigner(owner)
+        }
+    }
+
     override val signerType: String = "local"
 
     override suspend fun getAddress(): String {

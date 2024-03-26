@@ -24,7 +24,6 @@ import org.aakotlin.alchemy.middleware.AlchemyGasManagerConfig
 import org.aakotlin.alchemy.middleware.withAlchemyGasManager
 import org.aakotlin.alchemy.provider.AlchemyProvider
 import org.aakotlin.alchemy.provider.AlchemyProviderConfig
-import org.aakotlin.alchemy.provider.FeeOpts
 import org.aakotlin.core.Address
 import org.aakotlin.core.Chain
 import org.aakotlin.core.UserOperationCallData
@@ -200,7 +199,7 @@ class MainViewModel : ViewModel() {
                 Address(ALCHEMY_TOKEN_SEPOLIA_ADDRESS),
                 Numeric.hexStringToByteArray(encoded),
             )
-        )
+        ).hash
     }
 
     private suspend fun refreshAlchemyTokenBalance() {

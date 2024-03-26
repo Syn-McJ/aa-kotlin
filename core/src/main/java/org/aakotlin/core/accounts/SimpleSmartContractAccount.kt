@@ -37,7 +37,6 @@ open class SimpleSmartContractAccount(
 ) {
     override suspend fun getAccountInitCode(): String {
         val address = signer.getAddress()
-        println(address)
         val function = Function(
             "createAccount",
             listOf(
@@ -74,9 +73,21 @@ open class SimpleSmartContractAccount(
         return FunctionEncoder.encode(function)
     }
 
-//    override suspend fun encodeBatchExecute(txs: List<UserOperationCallData>): String {
-//        TODO("Not yet implemented")
-//    }
+    override suspend fun encodeBatchExecute(txs: List<UserOperationCallData>): String {
+        val targets = txs.map { org.web3j.abi.datatypes.Address(it.target.address) }
+        val datas = txs.map { DynamicBytes(it.data) }
+
+        val function = Function(
+            "executeBatch",
+            listOf(
+                org.web3j.abi.datatypes.DynamicArray(org.web3j.abi.datatypes.Address::class.java, targets),
+                org.web3j.abi.datatypes.DynamicArray(DynamicBytes::class.java, datas),
+            ),
+            listOf()
+        )
+
+        return FunctionEncoder.encode(function)
+    }
 
     override suspend fun signMessage(msg: ByteArray): ByteArray {
         return signer.signMessage(msg)

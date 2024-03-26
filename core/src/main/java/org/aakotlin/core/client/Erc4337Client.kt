@@ -7,6 +7,7 @@
 package org.aakotlin.core.client
 
 import org.aakotlin.core.Chain
+import org.aakotlin.core.UserOperationReceipt
 import org.aakotlin.core.UserOperationRequest
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.Request
@@ -15,9 +16,9 @@ interface Erc4337Client : Web3j {
     /**
      * calls eth_estimateUserOperationGas and  returns the result
      *
-     * @param request - the {@link UserOperationRequest} to estimate gas for
+     * @param request - the [UserOperationRequest] to estimate gas for
      * @param entryPoint - the entrypoint address the op will be sent to
-     * @returns the gas estimates for the given response (see: {@link UserOperationEstimateGasResponse})
+     * @returns the gas estimates for the given response (see: [EthEstimateUserOperationGas])
      */
     fun estimateUserOperationGas(
         request: UserOperationRequest,
@@ -27,7 +28,7 @@ interface Erc4337Client : Web3j {
     /**
      * calls eth_sendUserOperation and returns the hash of the sent UserOperation
      *
-     * @param request - the {@link UserOperationRequest} to send
+     * @param request - the [UserOperationRequest] to send
      * @param entryPoint - the entrypoint address the op will be sent to
      * @returns the hash of the sent UserOperation
      */
@@ -37,10 +38,10 @@ interface Erc4337Client : Web3j {
     ): Request<*, EthSendUserOperation>
 
     /**
-     * calls `eth_getUserOperationReceipt` and returns the {@link UserOperationReceipt}
+     * calls `eth_getUserOperationReceipt` and returns the [UserOperationReceipt]
      *
      * @param hash - the hash of the UserOperation to get the receipt for
-     * @returns - {@link UserOperationResponse}
+     * @returns - [EthGetUserOperationReceipt]
      */
     fun getUserOperationReceipt(hash: String): Request<*, EthGetUserOperationReceipt>
 
@@ -51,9 +52,7 @@ interface Erc4337Client : Web3j {
      *
      * - Docs: https://viem.sh/docs/actions/public/estimateFeesPerGas.html
      *
-     * @param client - Client to use
-     * @param parameters - {@link EstimateFeesPerGasParameters}
-     * @returns An estimate (in wei) for the fees per gas. {@link EstimateFeesPerGasReturnType}
+     * @returns An estimate (in wei) for the fees per gas.
      */
     suspend fun estimateFeesPerGas(chain: Chain): FeeValuesEIP1559
 }

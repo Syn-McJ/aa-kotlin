@@ -79,15 +79,13 @@ open class JsonRpc2_Erc4337 : JsonRpc2_0Web3j, Erc4337Client {
             ) / BigInteger.valueOf(denominator)
         }
 
-        val block =
-            ethGetBlockByNumber(
-                DefaultBlockParameterName.LATEST,
-                false,
-            ).await().block
+        val block = ethGetBlockByNumber(
+            DefaultBlockParameterName.LATEST,
+            false
+        ).await().block
 
-        val maxPriorityFeePerGas =
-            chain.defaultPriorityFee
-                ?: ethMaxPriorityFeePerGas().await().maxPriorityFeePerGas
+        val maxPriorityFeePerGas = chain.defaultPriorityFee
+            ?: ethMaxPriorityFeePerGas().await().maxPriorityFeePerGas
 
         val baseFeePerGas = multiply(block.baseFeePerGas)
         val maxFeePerGas = baseFeePerGas + maxPriorityFeePerGas

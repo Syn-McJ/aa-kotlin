@@ -17,6 +17,20 @@ value class Address(val address: String) {
     }
 }
 
+data class SendUserOperationResult(
+    val hash: String,
+    val request: UserOperationRequest
+)
+
+data class UserOperationOverrides(
+    val callGasLimit: BigInteger? = null,
+    val maxFeePerGas: BigInteger? = null,
+    val maxPriorityFeePerGas: BigInteger? = null,
+    val preVerificationGas: BigInteger? = null,
+    val verificationGasLimit: BigInteger? = null,
+    val paymasterAndData: String? = null
+)
+
 class UserOperationCallData(
     /** the target of the call */
     val target: Address,
