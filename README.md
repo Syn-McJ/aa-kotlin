@@ -8,8 +8,8 @@ For Swift library, [see this](https://github.com/syn-mcj/aa-swift).
 ## Installation
 
 ```
-implementation("org.aakotlin:core:0.1.2")
-implementation("org.aakotlin:alchemy:0.1.2")
+implementation("org.aakotlin:core:0.1.3")
+implementation("org.aakotlin:alchemy:0.1.3")
 ```
 
 ## Getting started
