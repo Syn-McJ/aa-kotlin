@@ -52,7 +52,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
 
-    implementation("com.github.Web3Auth:web3auth-android-sdk:5.0.2")
+    implementation("com.github.Web3Auth:web3auth-android-sdk:7.1.0")
     implementation("org.web3j:core:4.10.3")
     implementation("org.web3j:contracts:4.10.3")
 

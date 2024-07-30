@@ -21,15 +21,14 @@ object Defaults {
         return when (chain.id) {
             Chain.MainNet.id,
             Chain.Sepolia.id,
-            Chain.Goerli.id,
             Chain.Polygon.id,
-            Chain.PolygonMumbai.id,
             Chain.Optimism.id,
             Chain.OptimismGoerli.id,
             Chain.Arbitrum.id,
             Chain.ArbitrumGoerli.id,
             Chain.Base.id,
-            Chain.BaseGoerli.id -> Address("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789")
+            Chain.BaseGoerli.id,
+            Chain.BaseSepolia.id -> Address("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789")
 
             else -> throw Error("no default entry point contract exists for ${chain.name}")
         }
@@ -49,11 +48,10 @@ object Defaults {
             Chain.Optimism.id,
             Chain.Arbitrum.id,
             Chain.Base.id,
-            Chain.BaseGoerli.id -> Address("0x15Ba39375ee2Ab563E8873C8390be6f2E2F50232")
+            Chain.BaseGoerli.id,
+            Chain.BaseSepolia.id -> Address("0x15Ba39375ee2Ab563E8873C8390be6f2E2F50232")
 
             Chain.Sepolia.id,
-            Chain.Goerli.id,
-            Chain.PolygonMumbai.id,
             Chain.OptimismGoerli.id,
             Chain.ArbitrumGoerli.id -> Address("0x9406Cc6185a346906296840746125a0E44976454")
 
