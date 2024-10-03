@@ -31,9 +31,9 @@ class LightSmartContractAccount(
         factoryAddress,
         signer,
         chain,
-        accountAddress,
-    ) {
-    override suspend fun getAccountInitCode(): String {
+        accountAddress
+) {
+    override suspend fun getAccountInitCode(forAddress: String): String {
         return concatHex(
             listOf(
                 factoryAddress.address,
@@ -41,16 +41,16 @@ class LightSmartContractAccount(
                     Function(
                         "createAccount",
                         listOf(
-                            org.web3j.abi.datatypes.Address(signer.getAddress()),
+                            org.web3j.abi.datatypes.Address(forAddress),
                             // light account does not support sub-accounts
-                            Uint256(0),
+                            Uint256(0)
                         ),
                         listOf(
                             TypeReference.create(org.web3j.abi.datatypes.Address::class.java),
-                        ),
-                    ),
-                ),
-            ),
+                        )
+                    )
+                )
+            )
         )
     }
 }

@@ -41,7 +41,7 @@ abstract class BaseSmartContractAccount(
 ) : ISmartContractAccount {
     protected var deploymentState = DeploymentState.UNDEFINED
 
-    abstract suspend fun getAccountInitCode(): String
+    abstract suspend fun getAccountInitCode(forAddress: String): String
 
     override suspend fun getInitCode(): String {
         if (this.deploymentState == DeploymentState.DEPLOYED) {
@@ -58,7 +58,7 @@ abstract class BaseSmartContractAccount(
             this.deploymentState = DeploymentState.NOT_DEPLOYED
         }
 
-        return getAccountInitCode()
+        return getAccountInitCode(signer.getAddress())
     }
 
     override suspend fun getNonce(): BigInteger {
@@ -95,23 +95,27 @@ abstract class BaseSmartContractAccount(
             return it
         }
 
-        val initCode = getAccountInitCode()
+        val address = getAddressForSigner(signer.getAddress())
+        this.accountAddress = address
+
+        return address
+    }
+
+    override suspend fun getAddressForSigner(signerAddress: String): Address {
+        val initCode = getAccountInitCode(signerAddress)
         val encodedCall = encodeGetSenderAddress(initCode)
 
         try {
             rpcClient.ethCall(
                 Transaction.createEthCallTransaction(
-                    signer.getAddress(),
+                    signerAddress,
                     getEntryPointAddress().address,
                     encodedCall,
                 ),
                 DefaultBlockParameterName.LATEST,
             ).await()
         } catch (ex: JsonRpcError) {
-            val address = Address("0x${(ex.data as String).trim('"', ' ').takeLast(40)}")
-            this.accountAddress = address
-
-            return address
+            return Address("0x${(ex.data as String).trim('"', ' ').takeLast(40)}")
         }
 
         throw CounterfactualAddressException("Failed to get smart contract account address")
@@ -128,10 +132,10 @@ abstract class BaseSmartContractAccount(
                 listOf(
                     DynamicBytes(
                         Numeric.hexStringToByteArray(initCode),
-                    ),
+                    )
                 ),
-                listOf(),
-            ),
+                listOf()
+            )
         )
     }
 

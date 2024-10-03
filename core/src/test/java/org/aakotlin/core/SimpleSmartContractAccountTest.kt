@@ -34,7 +34,7 @@ class SimpleSmartContractAccountTest {
 
     @Test
     fun `getAccountInitCode should return correct hex`() = runTest {
-        val initCode = scAccount.getAccountInitCode()
+        val initCode = scAccount.getAccountInitCode(signer.getAddress())
         assertEquals(initCode, "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d27895fbfb9cf00000000000000000000000029df43f75149d0552475a6f9b2ac96e28796ed0b0000000000000000000000000000000000000000000000000000000000000000")
     }
 

@@ -32,7 +32,7 @@ class BaseSmartContractAccountTest {
             accountAddress = null
         )
 
-        val initCode = scAccount.getAccountInitCode()
+        val initCode = scAccount.getAccountInitCode(signer.getAddress())
         val encoded = scAccount.encodeGetSenderAddress(initCode)
         Assert.assertEquals(
             encoded,

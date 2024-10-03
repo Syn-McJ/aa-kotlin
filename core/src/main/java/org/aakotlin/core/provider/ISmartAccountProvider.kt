@@ -29,6 +29,11 @@ interface ISmartAccountProvider {
     suspend fun getAddress(): Address
 
     /**
+     * @returns the address of the smart contract account for the specified signer
+     */
+    suspend fun getAddressForSigner(signerAddress: String): Address
+
+    /**
      * Sends a user operation using the connected account.
      * Before executing, sendUserOperation will run the user operation through the middleware pipeline.
      * The order of the middlewares is:
