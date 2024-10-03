@@ -37,28 +37,19 @@ open class SmartAccountProvider(
     val chain: Chain,
     private val opts: SmartAccountProviderOpts? = null,
 ) : ISmartAccountProvider {
-    val rpcClient: Erc4337Client
+    val rpcClient: Erc4337Client = client ?: rpcUrl?.let {
+        createPublicErc4337Client(it)
+    } ?: throw IllegalArgumentException("No rpcUrl or client provided")
 
     private var account: ISmartContractAccount? = null
     private var gasEstimator: ClientMiddlewareFn = ::defaultGasEstimator
-        private set
     private var feeDataGetter: ClientMiddlewareFn = ::defaultFeeDataGetter
-        private set
     private var paymasterDataMiddleware: ClientMiddlewareFn = ::defaultPaymasterDataMiddleware
-        private set
     private var overridePaymasterDataMiddleware: ClientMiddlewareFn = ::defaultOverridePaymasterDataMiddleware
-        private set
     private var dummyPaymasterDataMiddleware: ClientMiddlewareFn = ::defaultDummyPaymasterDataMiddleware
-        private set
 
     override val isConnected: Boolean
         get() = this.account != null
-
-    init {
-        this.rpcClient = client ?: rpcUrl?.let {
-            createPublicErc4337Client(it)
-        } ?: throw IllegalArgumentException("No rpcUrl or client provided")
-    }
 
     fun connect(account: ISmartContractAccount) {
         this.account = account
@@ -68,6 +59,11 @@ open class SmartAccountProvider(
     override suspend fun getAddress(): Address {
         val account = this.account ?: throw IllegalStateException("Account not connected")
         return account.getAddress()
+    }
+
+    override suspend fun getAddressForSigner(signerAddress: String): Address {
+        val account = this.account ?: throw IllegalStateException("Account not connected")
+        return account.getAddressForSigner(signerAddress)
     }
 
     override suspend fun sendUserOperation(

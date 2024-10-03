@@ -69,6 +69,11 @@ interface ISmartContractAccount {
     suspend fun getAddress(): Address
 
     /**
+     * @returns the address of the smart contract account for the specified signer
+     */
+    suspend fun getAddressForSigner(signerAddress: String): Address
+
+    /**
      * @returns the smart contract account owner instance if it exists.
      * It is optional for a smart contract account to have an owner account.
      */

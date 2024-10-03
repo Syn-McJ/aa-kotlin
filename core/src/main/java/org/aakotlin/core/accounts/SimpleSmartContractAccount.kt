@@ -35,12 +35,11 @@ open class SimpleSmartContractAccount(
     chain,
     accountAddress
 ) {
-    override suspend fun getAccountInitCode(): String {
-        val address = signer.getAddress()
+    override suspend fun getAccountInitCode(forAddress: String): String {
         val function = Function(
             "createAccount",
             listOf(
-                org.web3j.abi.datatypes.Address(address),
+                org.web3j.abi.datatypes.Address(forAddress),
                 Uint256(index ?: 0)
             ),
             listOf(

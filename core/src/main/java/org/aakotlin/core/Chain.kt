@@ -36,24 +36,10 @@ sealed class Chain(
         Currency("Sepolia Ether", "SEP", 18)
     )
 
-    data object Goerli: Chain(
-        5,
-        "goerli",
-        "Goerli",
-        Currency("Goerli Ether", "ETH", 18)
-    )
-
     data object Polygon: Chain(
         137,
         "matic",
         "Polygon",
-        Currency("MATIC", "MATIC", 18)
-    )
-
-    data object PolygonMumbai: Chain(
-        80_001,
-        "maticmum",
-        "Polygon Mumbai",
         Currency("MATIC", "MATIC", 18)
     )
 
