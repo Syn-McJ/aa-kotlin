@@ -63,14 +63,14 @@ class AlchemyProvider(
             struct.callGasLimit = overrides.callGasLimit
         } else {
             val request = struct.toUserOperationRequest()
-            val estimates = rpcClient.estimateUserOperationGas(
+            val result = rpcClient.estimateUserOperationGas(
                 request,
                 getEntryPointAddress().address
             ).await().result
 
-            struct.preVerificationGas = overrides.preVerificationGas ?: estimates.preVerificationGas
-            struct.verificationGasLimit = overrides.verificationGasLimit ?: estimates.verificationGasLimit
-            struct.callGasLimit = overrides.callGasLimit ?: estimates.callGasLimit
+            struct.preVerificationGas = overrides.preVerificationGas ?: result.preVerificationGas
+            struct.verificationGasLimit = overrides.verificationGasLimit ?: result.verificationGasLimit
+            struct.callGasLimit = overrides.callGasLimit ?: result.callGasLimit
         }
 
         return struct
