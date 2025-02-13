@@ -37,9 +37,11 @@ open class SmartAccountProvider(
     val chain: Chain,
     private val opts: SmartAccountProviderOpts? = null,
 ) : ISmartAccountProvider {
-    val rpcClient: Erc4337Client = client ?: rpcUrl?.let {
+    public val rpcClient: Erc4337Client = client ?: rpcUrl?.let {
         createPublicErc4337Client(it)
     } ?: throw IllegalArgumentException("No rpcUrl or client provided")
+
+    private var middlewareClient: Erc4337Client? = null
 
     private var account: ISmartContractAccount? = null
     private var gasEstimator: ClientMiddlewareFn = ::defaultGasEstimator
@@ -210,6 +212,12 @@ open class SmartAccountProvider(
         return this
     }
 
+    fun withMiddlewareRpcClient(rpcClient: Erc4337Client): SmartAccountProvider {
+        return this.apply {
+            middlewareClient = rpcClient
+        }
+    }
+
     /**
      * Note that the connected account's entryPointAddress always takes the precedence
      */
@@ -250,7 +258,6 @@ open class SmartAccountProvider(
         overrides: UserOperationOverrides
     ): UserOperationStruct {
         // Reversed order - dummyPaymasterDataMiddleware is called first
-
         val asyncPipe = if (overrides.paymasterAndData != null) {
             overridePaymasterDataMiddleware
         } else {
@@ -260,7 +267,7 @@ open class SmartAccountProvider(
           feeDataGetter chain
           dummyPaymasterDataMiddleware
 
-        return asyncPipe(rpcClient, struct, overrides)
+        return asyncPipe(middlewareClient ?: rpcClient, struct, overrides)
     }
 
     // These are dependent on the specific paymaster being used
@@ -307,6 +314,12 @@ open class SmartAccountProvider(
         //
         // Refer to https://docs.alchemy.com/docs/maxpriorityfeepergas-vs-maxfeepergas
         // for more information about maxFeePerGas and maxPriorityFeePerGas
+        if (overrides.maxFeePerGas != null && overrides.maxPriorityFeePerGas != null) {
+            struct.maxFeePerGas = overrides.maxFeePerGas
+            struct.maxPriorityFeePerGas = overrides.maxPriorityFeePerGas
+            return struct
+        }
+
         val feeData = rpcClient.estimateFeesPerGas(chain)
         val maxPriorityFeePerGas = overrides.maxPriorityFeePerGas ?:
             rpcClient.ethMaxPriorityFeePerGas().await().maxPriorityFeePerGas

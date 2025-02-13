@@ -16,6 +16,8 @@ repositories {
 }
 
 dependencies {
+    implementation(project(":core"))
+
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
     implementation("org.web3j:core:4.12.0")
 

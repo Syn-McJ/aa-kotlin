@@ -17,3 +17,4 @@ rootProject.name = "aa-kotlin"
 include(":core")
 include(":alchemy")
 include(":example")
+include(":coinbase")

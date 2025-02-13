@@ -6,6 +6,7 @@
  */
 package org.aakotlin.alchemy.middleware
 
+import org.aakotlin.core.client.PaymasterAndData
 import org.aakotlin.core.client.JsonRpc2_Erc4337
 import org.web3j.protocol.Web3jService
 import org.web3j.protocol.core.Request
@@ -24,12 +25,12 @@ class AlchemyRpcClient(
 
     override fun requestPaymasterAndData(
         params: PaymasterAndDataParams
-    ): Request<*, AlchemyPaymasterAndData> {
+    ): Request<*, PaymasterAndData> {
         return Request(
             "alchemy_requestPaymasterAndData",
             listOf(params),
             web3jService,
-            AlchemyPaymasterAndData::class.java
+            PaymasterAndData::class.java
         )
     }
 
