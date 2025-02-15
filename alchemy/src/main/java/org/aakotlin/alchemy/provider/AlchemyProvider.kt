@@ -26,9 +26,9 @@ class AlchemyProvider(
             val chain = SupportedChains[config.chain.id]
                 ?: throw IllegalArgumentException("Unsupported chain id: ${config.chain.id}")
 
-            val rpcUrl = config.connectionConfig.rpcUrl
-                ?: chain.alchemyRpcHttpUrl?.let { "$it/${config.connectionConfig.apiKey ?: ""}" }
-                ?: throw IllegalArgumentException("No rpcUrl found for chain ${config.chain.id}")
+            val rpcUrl = config.connectionConfig.rpcUrl ?: chain.alchemyRpcHttpUrl?.let { baseUrl ->
+                config.connectionConfig.apiKey?.let { "$baseUrl/$it" } ?: baseUrl
+            } ?: throw IllegalArgumentException("No rpcUrl found for chain ${config.chain.id}")
 
             val rpcClient = createAlchemyClient(
                 rpcUrl,
