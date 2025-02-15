@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "org.aakotlin"
-version = "0.1.3"
+version = "0.1.4"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -19,7 +19,7 @@ dependencies {
     implementation(project(":core"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
-    implementation("org.web3j:core:4.10.3")
+    implementation("org.web3j:core:4.12.0")
 
     // Tests
     testImplementation("org.testng:testng:6.9.6")

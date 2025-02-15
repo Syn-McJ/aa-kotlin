@@ -34,7 +34,7 @@ val Chain.alchemyRpcHttpUrl: String?
         Chain.OptimismGoerli -> "https://opt-goerli.g.alchemy.com/v2"
         Chain.Base -> "https://base-mainnet.g.alchemy.com/v2"
         Chain.BaseGoerli -> "https://base-goerli.g.alchemy.com/v2"
-        Chain.BaseSepolia -> "https://base-sepolia.g.alchemy.com/v2/"
+        Chain.BaseSepolia -> "https://base-sepolia.g.alchemy.com/v2"
         else -> null
     }
 

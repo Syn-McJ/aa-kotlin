@@ -1,21 +1,19 @@
 /*
- * Copyright (c) 2024 aa-kotlin
+ * Copyright (c) 2025 aa-kotlin
  *
  * This file is part of the aa-kotlin project: https://github.com/syn-mcj/aa-kotlin,
  * and is released under the MIT License: https://opensource.org/licenses/MIT
  */
-package org.aakotlin.alchemy.provider
+package org.aakotlin.coinbase.provider
 
-import org.aakotlin.alchemy.SupportedChains
-import org.aakotlin.alchemy.alchemyRpcHttpUrl
-import org.aakotlin.alchemy.middleware.alchemyFeeEstimator
-import org.aakotlin.alchemy.middleware.createAlchemyClient
+import org.aakotlin.coinbase.SupportedChains
+import org.aakotlin.coinbase.coinbasePaymasterAndBundlerUrl
 import org.aakotlin.core.Address
 import org.aakotlin.core.client.Erc4337Client
 import org.aakotlin.core.provider.ProviderConfig
 import org.aakotlin.core.provider.SmartAccountProvider
 
-class AlchemyProvider(
+class CoinbaseProvider(
     entryPointAddress: Address?,
     config: ProviderConfig,
 ) : SmartAccountProvider(createRpcClient(config), null, entryPointAddress, config.chain, config.opts) {
@@ -26,11 +24,11 @@ class AlchemyProvider(
             val chain = SupportedChains[config.chain.id]
                 ?: throw IllegalArgumentException("Unsupported chain id: ${config.chain.id}")
 
-            val rpcUrl = config.connectionConfig.rpcUrl ?: chain.alchemyRpcHttpUrl?.let { baseUrl ->
+            val rpcUrl = config.connectionConfig.rpcUrl ?: chain.coinbasePaymasterAndBundlerUrl?.let { baseUrl ->
                 config.connectionConfig.apiKey?.let { "$baseUrl/$it" } ?: baseUrl
             } ?: throw IllegalArgumentException("No rpcUrl found for chain ${config.chain.id}")
 
-            val rpcClient = createAlchemyClient(
+            val rpcClient = createCoinbaseClient(
                 rpcUrl,
                 config.connectionConfig.jwt?.let { jwt ->
                     mapOf("Authorization" to "Bearer $jwt")
@@ -40,9 +38,5 @@ class AlchemyProvider(
 
             return rpcClient
         }
-    }
-
-    init {
-        withGasEstimator(alchemyFeeEstimator)
     }
 }
