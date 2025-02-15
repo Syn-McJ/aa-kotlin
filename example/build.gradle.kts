@@ -61,8 +61,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
 
     implementation("com.github.Web3Auth:web3auth-android-sdk:7.1.0")
-    implementation("org.web3j:core:4.10.3")
-    implementation("org.web3j:contracts:4.10.3")
+    implementation("org.web3j:core:4.12.0")
+    implementation("org.web3j:contracts:4.12.0")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
