@@ -5,12 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.aakotlin</groupId>
     <artifactId>aakotlin</artifactId>
-    <version>0.1.4</version>
+    <version>0.1.5</version>
     <packaging>pom</packaging>
 
     <modules>
         <module>core</module>
         <module>alchemy</module>
+        <module>coinbase</module>
     </modules>
 
     <description>Account Abstraction on mobile with Kotlin (Alchemy's implementation)</description>
