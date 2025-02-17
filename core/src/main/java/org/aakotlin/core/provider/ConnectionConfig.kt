@@ -4,7 +4,7 @@
  * This file is part of the aa-kotlin project: https://github.com/syn-mcj/aa-kotlin,
  * and is released under the MIT License: https://opensource.org/licenses/MIT
  */
-package org.aakotlin.alchemy
+package org.aakotlin.core.provider
 
 data class ConnectionConfig(
     val apiKey: String?,

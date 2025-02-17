@@ -17,17 +17,17 @@ import com.web3auth.core.types.LoginParams
 import com.web3auth.core.types.Provider
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
-import org.aakotlin.alchemy.ConnectionConfig
 import org.aakotlin.alchemy.account.LightSmartContractAccount
 import org.aakotlin.alchemy.account.defaultLightAccountFactoryAddress
 import org.aakotlin.alchemy.middleware.AlchemyGasManagerConfig
 import org.aakotlin.alchemy.middleware.withAlchemyGasManager
 import org.aakotlin.alchemy.provider.AlchemyProvider
-import org.aakotlin.alchemy.provider.AlchemyProviderConfig
 import org.aakotlin.core.Address
 import org.aakotlin.core.Chain
 import org.aakotlin.core.UserOperationCallData
+import org.aakotlin.core.provider.ConnectionConfig
 import org.aakotlin.core.provider.ISmartAccountProvider
+import org.aakotlin.core.provider.ProviderConfig
 import org.aakotlin.core.provider.SmartAccountProviderOpts
 import org.aakotlin.core.signer.LocalAccountSigner
 import org.aakotlin.core.util.Defaults
@@ -156,15 +156,16 @@ class MainViewModel : ViewModel() {
     }
 
     private fun setupSmartContractAccount(credentials: Credentials) {
+        val connectionConfig = ConnectionConfig(ALCHEMY_API_KEY, null, null)
         val provider = AlchemyProvider(
             Defaults.getDefaultEntryPointAddress(chain),
-            AlchemyProviderConfig(
+            ProviderConfig(
                 chain,
-                ConnectionConfig(ALCHEMY_API_KEY, null, null),
+                connectionConfig,
                 SmartAccountProviderOpts(50, 500)
             )
         ).withAlchemyGasManager(
-            AlchemyGasManagerConfig(ALCHEMY_GAS_POLICY_ID)
+            AlchemyGasManagerConfig(ALCHEMY_GAS_POLICY_ID, connectionConfig)
         )
 
         val account = LightSmartContractAccount(

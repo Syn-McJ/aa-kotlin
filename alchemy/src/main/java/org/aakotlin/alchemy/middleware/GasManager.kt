@@ -9,13 +9,17 @@ package org.aakotlin.alchemy.middleware
 import org.aakotlin.alchemy.provider.AlchemyProvider
 import org.aakotlin.core.Chain
 import org.aakotlin.core.provider.ClientMiddlewareFn
+import org.aakotlin.core.provider.ConnectionConfig
+import org.aakotlin.core.provider.ProviderConfig
+import org.aakotlin.core.provider.SmartAccountProvider
 import org.aakotlin.core.util.await
 import org.aakotlin.core.util.toUserOperationRequest
 import org.web3j.utils.Numeric
 import java.math.BigInteger
 
 data class AlchemyGasManagerConfig(
-    val policyId: String
+    val policyId: String,
+    val connectionConfig: ConnectionConfig
 )
 
 data class AlchemyGasEstimationOptions(
@@ -39,31 +43,13 @@ data class AlchemyGasEstimationOptions(
  * @param gasEstimationOptions - options to customize gas estimation middleware
  * @returns the provider augmented to use the alchemy gas manager
  */
-fun AlchemyProvider.withAlchemyGasManager(
+fun SmartAccountProvider.withAlchemyGasManager(
     config: AlchemyGasManagerConfig,
     gasEstimationOptions: AlchemyGasEstimationOptions? = null
 ) = apply {
     val fallbackFeeDataGetter = gasEstimationOptions?.fallbackFeeDataGetter ?: alchemyFeeEstimator
     val fallbackGasEstimator = gasEstimationOptions?.fallbackGasEstimator ?: ::defaultGasEstimator
     val disableGasEstimation = gasEstimationOptions?.disableGasEstimation ?: false
-
-    withGasEstimator(
-        if (disableGasEstimation) {
-            fallbackGasEstimator
-        } else {
-            { client, uoStruct, overrides ->
-                uoStruct.callGasLimit = BigInteger.ZERO
-                uoStruct.preVerificationGas = BigInteger.ZERO
-                uoStruct.verificationGasLimit = BigInteger.ZERO
-
-                if (!overrides.paymasterAndData.isNullOrEmpty()) {
-                    fallbackGasEstimator(client, uoStruct, overrides)
-                } else {
-                    uoStruct
-                }
-            }
-        }
-    )
 
     withFeeDataGetter(
         if (disableGasEstimation) {
@@ -89,12 +75,32 @@ fun AlchemyProvider.withAlchemyGasManager(
         }
     )
 
-    return if (disableGasEstimation) {
+    withGasEstimator(
+        if (disableGasEstimation) {
+            fallbackGasEstimator
+        } else {
+            { client, uoStruct, overrides ->
+                uoStruct.callGasLimit = BigInteger.ZERO
+                uoStruct.preVerificationGas = BigInteger.ZERO
+                uoStruct.verificationGasLimit = BigInteger.ZERO
+
+                if (!overrides.paymasterAndData.isNullOrEmpty()) {
+                    fallbackGasEstimator(client, uoStruct, overrides)
+                } else {
+                    uoStruct
+                }
+            }
+        }
+    )
+
+    if (disableGasEstimation) {
         requestPaymasterAndData(this, config)
     } else {
         requestGasAndPaymasterData(this, config)
     }
-}
+}.withMiddlewareRpcClient(
+    AlchemyProvider.createRpcClient(ProviderConfig(chain, config.connectionConfig))
+)
 
 /**
  * This uses the alchemy RPC method: `alchemy_requestPaymasterAndData`, which does not estimate gas. It's recommended to use
@@ -106,17 +112,17 @@ fun AlchemyProvider.withAlchemyGasManager(
  * @returns the provider augmented to use the paymaster middleware
  */
 fun requestPaymasterAndData(
-    provider: AlchemyProvider,
+    provider: SmartAccountProvider,
     config: AlchemyGasManagerConfig
-): AlchemyProvider = provider.apply {
+): SmartAccountProvider = provider.apply {
     withPaymasterMiddleware(
         { _, struct, _ ->
             struct.apply {
                 paymasterAndData = dummyPaymasterAndData(provider.chain.id)
             }
         },
-        { _, struct, _ ->
-            val data = (provider.rpcClient as AlchemyClient).requestPaymasterAndData(
+        { client, struct, _ ->
+            val data = (client as AlchemyClient).requestPaymasterAndData(
                 PaymasterAndDataParams(
                     config.policyId,
                     provider.getEntryPointAddress().address,
@@ -140,16 +146,16 @@ fun requestPaymasterAndData(
  * @returns the provider augmented to use the paymaster middleware
  */
 fun requestGasAndPaymasterData(
-    provider: AlchemyProvider,
+    provider: SmartAccountProvider,
     config: AlchemyGasManagerConfig
-): AlchemyProvider = provider.apply {
+): SmartAccountProvider = provider.apply {
     withPaymasterMiddleware(
         { _, struct, _ ->
             struct.apply {
                 paymasterAndData = dummyPaymasterAndData(provider.chain.id)
             }
         },
-        { _, struct, overrides ->
+        { client, struct, overrides ->
             val userOperation = struct.toUserOperationRequest()
             val feeOverride = FeeOverride(
                 maxFeePerGas = overrides.maxFeePerGas?.let(Numeric::encodeQuantity),
@@ -159,14 +165,15 @@ fun requestGasAndPaymasterData(
                 preVerificationGas = overrides.preVerificationGas?.let(Numeric::encodeQuantity)
             )
 
-            val result = (provider.rpcClient as AlchemyClient).requestGasAndPaymasterAndData(
-                PaymasterAndDataParams(
-                    config.policyId,
-                    provider.getEntryPointAddress().address,
-                    userOperation,
-                    userOperation.signature,
-                    if (feeOverride.isEmpty) null else feeOverride
-                )
+            val params = PaymasterAndDataParams(
+                config.policyId,
+                provider.getEntryPointAddress().address,
+                userOperation,
+                userOperation.signature,
+                if (feeOverride.isEmpty) null else feeOverride
+            )
+            val result = (client as AlchemyClient).requestGasAndPaymasterAndData(
+                params
             ).await().result
 
             struct.apply {
