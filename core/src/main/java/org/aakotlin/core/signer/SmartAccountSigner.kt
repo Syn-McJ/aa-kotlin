@@ -6,6 +6,7 @@
  */
 package org.aakotlin.core.signer
 
+import kotlinx.coroutines.flow.StateFlow
 import org.web3j.crypto.Credentials
 
 /**
@@ -21,7 +22,7 @@ import org.web3j.crypto.Credentials
  */
 interface SmartAccountSigner {
     val signerType: String
-    val credentials: Credentials?
+    val credentials: StateFlow<Credentials?>
 
     suspend fun getAddress(): String
 

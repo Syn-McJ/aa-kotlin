@@ -17,7 +17,7 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
-    implementation("org.web3j:core:4.12.0")
+    implementation("org.web3j:core:4.13.0")
 
     // Tests
     testImplementation("org.testng:testng:6.9.6")

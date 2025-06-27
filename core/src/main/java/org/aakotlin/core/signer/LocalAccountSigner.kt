@@ -7,27 +7,44 @@
 package org.aakotlin.core.signer
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.Sign
 
-class LocalAccountSigner(
-    override val credentials: Credentials
-) : SmartAccountSigner {
+class LocalAccountSigner : SmartAccountSigner {
     companion object {
         fun privateKeyToAccountSigner(key: String): LocalAccountSigner {
-            val owner = Credentials.create(key)
-            return LocalAccountSigner(owner)
+            val signer = LocalAccountSigner()
+            signer.setCredentials(Credentials.create(key))
+
+            return signer
         }
     }
 
     override val signerType: String = "local"
 
+    private val _credentials: MutableStateFlow<Credentials?> = MutableStateFlow(null)
+    override val credentials: StateFlow<Credentials?>
+        get() = _credentials.asStateFlow()
+
+    fun setCredentials(credentials: Credentials) {
+        _credentials.value = credentials
+    }
+
+    fun logout() {
+        _credentials.value = null
+    }
+
     override suspend fun getAddress(): String {
-        return credentials.address
+        return credentials.value?.address ?: throw IllegalStateException("Credentials not set")
     }
 
     override suspend fun signMessage(msg: ByteArray): ByteArray {
+        val credentials = credentials.value ?: throw IllegalStateException("Credentials not set")
+
         return withContext(Dispatchers.IO) {
             val signature = Sign.signPrefixedMessage(msg, credentials.ecKeyPair)
             val sig = ByteArray(65)
