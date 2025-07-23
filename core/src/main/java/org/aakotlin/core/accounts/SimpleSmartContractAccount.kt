@@ -8,8 +8,9 @@ package org.aakotlin.core.accounts
 
 import org.aakotlin.core.Address
 import org.aakotlin.core.Chain
+import org.aakotlin.core.EntryPoint
 import org.aakotlin.core.UserOperationCallData
-import org.aakotlin.core.client.Erc4337Client
+import org.aakotlin.core.client.BundlerClient
 import org.aakotlin.core.signer.SmartAccountSigner
 import org.aakotlin.core.util.concatHex
 import org.web3j.abi.FunctionEncoder
@@ -21,16 +22,16 @@ import org.web3j.utils.Numeric
 import java.math.BigInteger
 
 open class SimpleSmartContractAccount(
-    private val rpcClient: Erc4337Client,
-    private val entryPointAddress: Address? = null,
+    private val rpcClient: BundlerClient,
+    private val entryPoint: EntryPoint? = null,
     private val factoryAddress: Address,
     private val signer: SmartAccountSigner,
     private val chain: Chain,
-    private val accountAddress: Address? = null,
+    private val accountAddress: String? = null,
     private val index: Long? = null
 ): BaseSmartContractAccount(
     rpcClient,
-    entryPointAddress,
+    entryPoint,
     signer,
     chain,
     accountAddress
@@ -92,6 +93,8 @@ open class SimpleSmartContractAccount(
         return signer.signMessage(msg)
     }
 
+    override fun getSigner(): SmartAccountSigner = signer
+
 //    override suspend fun signMessageWith6492(msg: ByteArray): ByteArray {
 //        TODO("Not yet implemented")
 //    }
@@ -102,5 +105,9 @@ open class SimpleSmartContractAccount(
 
     override suspend fun getFactoryAddress(): Address {
         return factoryAddress
+    }
+
+    override fun getImplementationAddress(): String {
+        TODO("Not yet implemented")
     }
 }

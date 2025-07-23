@@ -12,7 +12,7 @@ import org.aakotlin.core.UserOperationRequest
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.core.Request
 
-interface Erc4337Client : Web3j {
+interface BundlerClient : Web3j {
     /**
      * calls eth_estimateUserOperationGas and  returns the result
      *

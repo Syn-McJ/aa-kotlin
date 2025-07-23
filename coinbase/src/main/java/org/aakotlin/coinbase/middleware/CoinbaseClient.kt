@@ -7,15 +7,11 @@
 package org.aakotlin.coinbase.middleware
 
 import org.aakotlin.core.UserOperationRequest
-import org.aakotlin.core.client.Erc4337Client
-import org.aakotlin.core.client.PaymasterAndData
+import org.aakotlin.core.client.BundlerClient
+import org.aakotlin.core.client.Erc7677Client
 import org.web3j.protocol.core.Request
 
-interface CoinbaseClient: Erc4337Client {
-    fun getPaymasterData(
-        params: PaymasterDataParams
-    ): Request<*, PaymasterAndData>
-
+interface CoinbaseClient: BundlerClient, Erc7677Client {
     fun sponsorUserOperation(
         userOp: UserOperationRequest,
         entryPoint: String

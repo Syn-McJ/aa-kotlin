@@ -6,9 +6,9 @@
  */
 package org.aakotlin.core.accounts
 
-import org.aakotlin.core.Address
 import org.aakotlin.core.Chain
-import org.aakotlin.core.client.Erc4337Client
+import org.aakotlin.core.EntryPoint
+import org.aakotlin.core.client.BundlerClient
 import org.aakotlin.core.signer.SmartAccountSigner
 import org.aakotlin.core.util.Defaults
 import org.aakotlin.core.util.await
@@ -33,11 +33,11 @@ enum class DeploymentState(val value: String) {
 }
 
 abstract class BaseSmartContractAccount(
-    private val rpcClient: Erc4337Client,
-    private val entryPointAddress: Address? = null,
+    private val rpcClient: BundlerClient,
+    private val entryPoint: EntryPoint? = null,
     private val signer: SmartAccountSigner,
     private val chain: Chain,
-    private var accountAddress: Address? = null,
+    private var accountAddress: String? = null,
 ) : ISmartContractAccount {
     protected var deploymentState = DeploymentState.UNDEFINED
 
@@ -48,7 +48,7 @@ abstract class BaseSmartContractAccount(
             return "0x"
         }
 
-        val ethGetCode = rpcClient.ethGetCode(getAddress().address, DefaultBlockParameterName.LATEST).await()
+        val ethGetCode = rpcClient.ethGetCode(getAddress(), DefaultBlockParameterName.LATEST).await()
         val contractCode = ethGetCode.code
 
         if (contractCode.length > 2) {
@@ -66,13 +66,17 @@ abstract class BaseSmartContractAccount(
             return BigInteger.ZERO
         }
 
+        return getNonce(BigInteger.ZERO)
+    }
+
+    suspend fun getNonce(nonceKey: BigInteger): BigInteger {
         val address = this.getAddress()
         val encodedCall = FunctionEncoder.encode(
             Function(
                 "getNonce",
                 listOf(
-                    org.web3j.abi.datatypes.Address(address.address),
-                    Uint192(0),
+                    org.web3j.abi.datatypes.Address(address),
+                    Uint192(nonceKey),
                 ),
                 listOf(object : TypeReference<Uint256>() {}),
             )
@@ -81,7 +85,7 @@ abstract class BaseSmartContractAccount(
         val result = rpcClient.ethCall(
             Transaction.createEthCallTransaction(
                 signer.getAddress(),
-                getEntryPointAddress().address,
+                getEntryPoint().address,
                 encodedCall
             ),
             DefaultBlockParameterName.LATEST,
@@ -90,7 +94,7 @@ abstract class BaseSmartContractAccount(
         return Numeric.toBigInt(result)
     }
 
-    override suspend fun getAddress(): Address {
+    override suspend fun getAddress(): String {
         accountAddress?.let {
             return it
         }
@@ -101,7 +105,7 @@ abstract class BaseSmartContractAccount(
         return address
     }
 
-    override suspend fun getAddressForSigner(signerAddress: String): Address {
+    override suspend fun getAddressForSigner(signerAddress: String): String {
         val initCode = getAccountInitCode(signerAddress)
         val encodedCall = encodeGetSenderAddress(initCode)
 
@@ -109,20 +113,20 @@ abstract class BaseSmartContractAccount(
             rpcClient.ethCall(
                 Transaction.createEthCallTransaction(
                     signerAddress,
-                    getEntryPointAddress().address,
+                    getEntryPoint().address,
                     encodedCall,
                 ),
                 DefaultBlockParameterName.LATEST,
             ).await()
         } catch (ex: JsonRpcError) {
-            return Address("0x${(ex.data as String).trim('"', ' ').takeLast(40)}")
+            return "0x${(ex.data as String).trim('"', ' ').takeLast(40)}"
         }
 
         throw CounterfactualAddressException("Failed to get smart contract account address")
     }
 
-    override fun getEntryPointAddress(): Address {
-        return this.entryPointAddress ?: Defaults.getDefaultEntryPointAddress(this.chain)
+    override fun getEntryPoint(): EntryPoint {
+        return this.entryPoint ?: Defaults.getDefaultEntryPoint(this.chain)
     }
 
     internal fun encodeGetSenderAddress(initCode: String): String {

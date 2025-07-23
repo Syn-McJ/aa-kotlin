@@ -7,7 +7,7 @@
 package org.aakotlin.core
 
 import org.aakotlin.core.accounts.SimpleSmartContractAccount
-import org.aakotlin.core.client.Erc4337Client
+import org.aakotlin.core.client.BundlerClient
 import org.aakotlin.core.signer.SmartAccountSigner
 import org.junit.Test
 import org.mockito.kotlin.mock
@@ -18,7 +18,7 @@ import java.math.BigInteger
 
 @OptIn(ExperimentalStdlibApi::class)
 class SimpleSmartContractAccountTest {
-    private val rpcClient = mock<Erc4337Client>()
+    private val rpcClient = mock<BundlerClient>()
     private val signer = mock<SmartAccountSigner> {
         onBlocking { getAddress() } doReturn "0x29DF43F75149D0552475A6f9B2aC96E28796ed0b"
     }

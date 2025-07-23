@@ -37,8 +37,12 @@ class AlchemyGasAndPaymasterAndData: Response<AlchemyGasAndPaymasterAndData.GasA
     )
 
     class GasAndPaymasterAndData @JsonCreator constructor(
+        @JsonProperty(value = "paymaster")
+        val paymaster: String?,
         @JsonProperty(value = "paymasterAndData")
-        val paymasterAndData: String,
+        val paymasterAndData: String?,
+        @JsonProperty(value = "paymasterData")
+        val paymasterData: String?,
         @JsonProperty(value = "callGasLimit")
         val callGasLimitStr: String,
         @JsonProperty(value = "verificationGasLimit")
@@ -49,6 +53,10 @@ class AlchemyGasAndPaymasterAndData: Response<AlchemyGasAndPaymasterAndData.GasA
         val maxFeePerGasStr: String,
         @JsonProperty(value = "maxPriorityFeePerGas")
         val maxPriorityFeePerGasStr: String,
+        @JsonProperty(value = "paymasterVerificationGasLimit")
+        val paymasterVerificationGasLimitStr: String?,
+        @JsonProperty(value = "paymasterPostOpGasLimit")
+        val paymasterPostOpGasLimitStr: String?,
         @JsonProperty(value = "error")
         val error: ErrorObject?
     ) {
@@ -66,6 +74,12 @@ class AlchemyGasAndPaymasterAndData: Response<AlchemyGasAndPaymasterAndData.GasA
 
         val maxPriorityFeePerGas: BigInteger
             get() = Numeric.decodeQuantity(maxPriorityFeePerGasStr)
+
+        val paymasterVerificationGasLimit: BigInteger
+            get() = Numeric.decodeQuantity(paymasterVerificationGasLimitStr)
+
+        val paymasterPostOpGasLimit: BigInteger
+            get() = Numeric.decodeQuantity(paymasterPostOpGasLimitStr)
     }
 
     class ResponseDeserialiser : JsonDeserializer<GasAndPaymasterAndData>() {

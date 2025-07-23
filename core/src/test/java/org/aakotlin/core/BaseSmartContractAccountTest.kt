@@ -8,7 +8,7 @@ package org.aakotlin.core
 
 import kotlinx.coroutines.test.runTest
 import org.aakotlin.core.accounts.SimpleSmartContractAccount
-import org.aakotlin.core.client.Erc4337Client
+import org.aakotlin.core.client.BundlerClient
 import org.aakotlin.core.signer.SmartAccountSigner
 import org.junit.Test
 import org.mockito.kotlin.doReturn
@@ -16,7 +16,7 @@ import org.mockito.kotlin.mock
 import org.testng.Assert
 
 class BaseSmartContractAccountTest {
-    private val rpcClient = mock<Erc4337Client>()
+    private val rpcClient = mock<BundlerClient>()
     private val signer = mock<SmartAccountSigner> {
         onBlocking { getAddress() } doReturn "0x29DF43F75149D0552475A6f9B2aC96E28796ed0b"
     }
@@ -25,7 +25,6 @@ class BaseSmartContractAccountTest {
     fun `encodeGetSenderAddress should return correct hex`() = runTest {
         val scAccount = SimpleSmartContractAccount(
             rpcClient = rpcClient,
-            entryPointAddress = null,
             factoryAddress = Address("0x000000893A26168158fbeaDD9335Be5bC96592E2"),
             signer = signer,
             chain = Chain.BaseSepolia,

@@ -16,9 +16,11 @@ import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import org.web3j.protocol.ObjectMapperFactory
 import org.web3j.protocol.core.Response
+import org.web3j.utils.Numeric
 import java.io.IOException
+import java.math.BigInteger
 
-class PaymasterAndData: Response<PaymasterAndData.Result>() {
+class PaymasterData: Response<PaymasterData.Result>() {
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonDeserialize(using = ResponseDeserialiser::class)
     override fun setResult(result: Result) {
@@ -34,12 +36,35 @@ class PaymasterAndData: Response<PaymasterAndData.Result>() {
         val data: Any?
     )
 
+    class Sponsor @JsonCreator constructor(
+        @JsonProperty(value = "name")
+        val name: String?,
+        @JsonProperty(value = "icon")
+        val icon: String?
+    )
+
     class Result @JsonCreator constructor(
+        @JsonProperty(value = "paymaster")
+        val paymaster: String?,
+        @JsonProperty(value = "paymasterData")
+        val paymasterData: String?,
         @JsonProperty(value = "paymasterAndData")
-        val paymasterAndData: String,
+        val paymasterAndData: String?,
+        @JsonProperty(value = "paymasterVerificationGasLimit")
+        val paymasterVerificationGasLimitStr: String?,
+        @JsonProperty(value = "paymasterPostOpGasLimit")
+        val paymasterPostOpGasLimitStr: String?,
+        @JsonProperty(value = "sponsor")
+        val sponsor: Sponsor?,
         @JsonProperty(value = "error")
         val error: ErrorObject?
-    )
+    ) {
+        val paymasterVerificationGasLimit: BigInteger?
+            get() = paymasterVerificationGasLimitStr?.let { Numeric.decodeQuantity(it) }
+
+        val paymasterPostOpGasLimit: BigInteger?
+            get() = paymasterPostOpGasLimitStr?.let { Numeric.decodeQuantity(it) }
+    }
 
     class ResponseDeserialiser : JsonDeserializer<Result>() {
         private val objectReader = ObjectMapperFactory.getObjectReader()

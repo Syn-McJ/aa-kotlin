@@ -7,8 +7,8 @@
 package org.aakotlin.core.provider
 
 import kotlinx.coroutines.delay
-import org.aakotlin.core.Address
 import org.aakotlin.core.Chain
+import org.aakotlin.core.EntryPoint
 import org.aakotlin.core.SendUserOperationResult
 import org.aakotlin.core.UserOperationCallData
 import org.aakotlin.core.UserOperationOverrides
@@ -16,13 +16,13 @@ import org.aakotlin.core.UserOperationReceipt
 import org.aakotlin.core.UserOperationRequest
 import org.aakotlin.core.UserOperationStruct
 import org.aakotlin.core.accounts.ISmartContractAccount
-import org.aakotlin.core.client.Erc4337Client
-import org.aakotlin.core.client.EthEstimateUserOperationGas
-import org.aakotlin.core.client.createPublicErc4337Client
+import org.aakotlin.core.client.BundlerClient
+import org.aakotlin.core.client.createBundlerClient
+import org.aakotlin.core.middleware.defaults.defaultGasEstimator
+import org.aakotlin.core.middleware.defaults.defaultUserOpSigner
 import org.aakotlin.core.util.Defaults
 import org.aakotlin.core.util.await
 import org.aakotlin.core.util.bigIntPercent
-import org.aakotlin.core.util.getUserOperationHash
 import org.aakotlin.core.util.isValidRequest
 import org.aakotlin.core.util.toUserOperationRequest
 import org.web3j.utils.Numeric
@@ -31,39 +31,38 @@ import kotlin.math.pow
 import kotlin.random.Random
 
 open class SmartAccountProvider(
-    client: Erc4337Client?,
+    client: BundlerClient?,
     rpcUrl: String?,
-    private val entryPointAddress: Address?,
     val chain: Chain,
     private val opts: SmartAccountProviderOpts? = null,
 ) : ISmartAccountProvider {
-    public val rpcClient: Erc4337Client = client ?: rpcUrl?.let {
-        createPublicErc4337Client(it)
+    public val rpcClient: BundlerClient = client ?: rpcUrl?.let {
+        createBundlerClient(it)
     } ?: throw IllegalArgumentException("No rpcUrl or client provided")
 
-    private var middlewareClient: Erc4337Client? = null
+    private var middlewareClient: BundlerClient? = null
 
     private var account: ISmartContractAccount? = null
-    private var gasEstimator: ClientMiddlewareFn = ::defaultGasEstimator
+    private var gasEstimator: ClientMiddlewareFn = defaultGasEstimator
     private var feeDataGetter: ClientMiddlewareFn = ::defaultFeeDataGetter
     private var paymasterDataMiddleware: ClientMiddlewareFn = ::defaultPaymasterDataMiddleware
     private var overridePaymasterDataMiddleware: ClientMiddlewareFn = ::defaultOverridePaymasterDataMiddleware
     private var dummyPaymasterDataMiddleware: ClientMiddlewareFn = ::defaultDummyPaymasterDataMiddleware
+    private var userOperationSigner: ClientMiddlewareFn = defaultUserOpSigner
 
     override val isConnected: Boolean
         get() = this.account != null
 
-    fun connect(account: ISmartContractAccount) {
+    open fun connect(account: ISmartContractAccount) {
         this.account = account
-        // TODO: this method isn't very useful atm
     }
 
-    override suspend fun getAddress(): Address {
+    override suspend fun getAddress(): String {
         val account = this.account ?: throw IllegalStateException("Account not connected")
         return account.getAddress()
     }
 
-    override suspend fun getAddressForSigner(signerAddress: String): Address {
+    override suspend fun getAddressForSigner(signerAddress: String): String {
         val account = this.account ?: throw IllegalStateException("Account not connected")
         return account.getAddressForSigner(signerAddress)
     }
@@ -93,12 +92,12 @@ open class SmartAccountProvider(
         overrides: UserOperationOverrides?
     ): SendUserOperationResult {
         val uoToSubmit = UserOperationStruct(
-            initCode = uoToDrop.initCode,
+            initCode = uoToDrop.initCode, // TODO
             sender = uoToDrop.sender,
             nonce = Numeric.decodeQuantity(uoToDrop.nonce),
             callData = uoToDrop.callData,
             signature = Numeric.hexStringToByteArray(uoToDrop.signature),
-            paymasterAndData = "0x",
+            paymasterAndData = "0x", // TODO: check for v7 entrypoint
         )
 
         // Run once to get the fee estimates
@@ -132,7 +131,7 @@ open class SmartAccountProvider(
         return runMiddlewareStack(
             UserOperationStruct(
                 initCode = account.getInitCode(),
-                sender = getAddress().address,
+                sender = getAddress(),
                 nonce = account.getNonce(),
                 callData = account.encodeExecute(
                     data.target,
@@ -155,7 +154,7 @@ open class SmartAccountProvider(
         return runMiddlewareStack(
             UserOperationStruct(
                 initCode = account.getInitCode(),
-                sender = getAddress().address,
+                sender = getAddress(),
                 nonce = account.getNonce(),
                 callData = account.encodeBatchExecute(data),
                 signature = account.getDummySignature(),
@@ -198,13 +197,8 @@ open class SmartAccountProvider(
     }
 
     override fun withPaymasterMiddleware(
-        dummyPaymasterDataMiddleware: ClientMiddlewareFn?,
         paymasterDataMiddleware: ClientMiddlewareFn?,
     ): ISmartAccountProvider {
-        if (dummyPaymasterDataMiddleware != null) {
-            this.dummyPaymasterDataMiddleware = dummyPaymasterDataMiddleware
-        }
-
         if (paymasterDataMiddleware != null) {
             this.paymasterDataMiddleware = paymasterDataMiddleware
         }
@@ -212,7 +206,22 @@ open class SmartAccountProvider(
         return this
     }
 
-    fun withMiddlewareRpcClient(rpcClient: Erc4337Client): SmartAccountProvider {
+    override fun withDummyPaymasterMiddleware(
+        dummyPaymasterDataMiddleware: ClientMiddlewareFn?
+    ): ISmartAccountProvider {
+        if (dummyPaymasterDataMiddleware != null) {
+            this.dummyPaymasterDataMiddleware = dummyPaymasterDataMiddleware
+        }
+
+        return this
+    }
+
+    override fun withUserOperationSigner(signer: ClientMiddlewareFn): ISmartAccountProvider {
+        this.userOperationSigner = signer
+        return this
+    }
+
+    fun withMiddlewareRpcClient(rpcClient: BundlerClient): SmartAccountProvider {
         return this.apply {
             middlewareClient = rpcClient
         }
@@ -221,10 +230,9 @@ open class SmartAccountProvider(
     /**
      * Note that the connected account's entryPointAddress always takes the precedence
      */
-    fun getEntryPointAddress(): Address {
-        return this.entryPointAddress
-            ?: this.account?.getEntryPointAddress()
-            ?: Defaults.getDefaultEntryPointAddress(this.chain)
+    fun getEntryPoint(): EntryPoint {
+        return this.account?.getEntryPoint()
+            ?: Defaults.getDefaultEntryPoint(this.chain)
     }
 
     private suspend fun sendUserOperation(struct: UserOperationStruct): SendUserOperationResult {
@@ -236,18 +244,12 @@ open class SmartAccountProvider(
             )
         }
 
-        struct.signature = account.signMessage(
-            getUserOperationHash(
-                struct,
-                this.getEntryPointAddress(),
-                this.chain.id
-            )
-        )
+        userOperationSigner(middlewareClient ?: rpcClient, account, struct, UserOperationOverrides())
 
         val request = struct.toUserOperationRequest()
         val hash = rpcClient.sendUserOperation(
             request,
-            this.getEntryPointAddress().address,
+            this.getEntryPoint().address,
         ).await().result
 
         return SendUserOperationResult(hash, request)
@@ -257,6 +259,8 @@ open class SmartAccountProvider(
         struct: UserOperationStruct,
         overrides: UserOperationOverrides
     ): UserOperationStruct {
+        val account = account ?: throw java.lang.IllegalStateException("Account not connected")
+
         // Reversed order - dummyPaymasterDataMiddleware is called first
         val asyncPipe = if (overrides.paymasterAndData != null) {
             overridePaymasterDataMiddleware
@@ -267,7 +271,7 @@ open class SmartAccountProvider(
           feeDataGetter chain
           dummyPaymasterDataMiddleware
 
-        return asyncPipe(middlewareClient ?: rpcClient, struct, overrides)
+        return asyncPipe(middlewareClient ?: rpcClient, account, struct, overrides)
     }
 
     // These are dependent on the specific paymaster being used
@@ -275,7 +279,8 @@ open class SmartAccountProvider(
     // or extend this class and provider your own implementation
 
     protected open suspend fun defaultDummyPaymasterDataMiddleware(
-        client: Erc4337Client,
+        client: BundlerClient,
+        account: ISmartContractAccount,
         struct: UserOperationStruct,
         overrides: UserOperationOverrides
     ): UserOperationStruct {
@@ -284,7 +289,8 @@ open class SmartAccountProvider(
     }
 
     protected open suspend fun defaultOverridePaymasterDataMiddleware(
-        client: Erc4337Client,
+        client: BundlerClient,
+        account: ISmartContractAccount,
         struct: UserOperationStruct,
         overrides: UserOperationOverrides
     ): UserOperationStruct {
@@ -293,7 +299,8 @@ open class SmartAccountProvider(
     }
 
     protected open suspend fun defaultPaymasterDataMiddleware(
-        client: Erc4337Client,
+        client: BundlerClient,
+        account: ISmartContractAccount,
         struct: UserOperationStruct,
         overrides: UserOperationOverrides
     ): UserOperationStruct {
@@ -302,7 +309,8 @@ open class SmartAccountProvider(
     }
 
     protected open suspend fun defaultFeeDataGetter(
-        client: Erc4337Client,
+        client: BundlerClient,
+        account: ISmartContractAccount,
         struct: UserOperationStruct,
         overrides: UserOperationOverrides
     ): UserOperationStruct {
@@ -333,32 +341,7 @@ open class SmartAccountProvider(
         return struct
     }
 
-    open suspend fun defaultGasEstimator(
-        client: Erc4337Client,
-        struct: UserOperationStruct,
-        overrides: UserOperationOverrides
-    ): UserOperationStruct {
-        var estimates: EthEstimateUserOperationGas.EstimateUserOperationGas? = null
-
-        if (overrides.callGasLimit == null ||
-            overrides.verificationGasLimit == null ||
-            overrides.preVerificationGas == null
-        ) {
-            val request = struct.toUserOperationRequest()
-            estimates = rpcClient.estimateUserOperationGas(
-                request,
-                this.getEntryPointAddress().address
-            ).await().result
-        }
-
-        struct.preVerificationGas = overrides.preVerificationGas ?: estimates!!.preVerificationGas
-        struct.verificationGasLimit = overrides.verificationGasLimit ?: estimates!!.verificationGasLimit
-        struct.callGasLimit = overrides.callGasLimit ?: estimates!!.callGasLimit
-
-        return struct
-    }
-
     private infix fun (ClientMiddlewareFn).chain(g: ClientMiddlewareFn): ClientMiddlewareFn {
-        return { x, y, z -> this(x, g(x, y, z), z) }
+        return { x, a, y, z -> this(x, a, g(x, a, y, z), z) }
     }
 }
