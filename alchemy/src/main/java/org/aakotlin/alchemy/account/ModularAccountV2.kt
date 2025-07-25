@@ -27,7 +27,7 @@ import java.math.BigInteger
  */
 class ModularAccountV2(
     private val rpcClient: BundlerClient,
-    private val factoryAddress: Address? = null,
+    private val factoryAddress: String? = null,
     private val signer: SmartAccountSigner,
     private val chain: Chain,
     private val mode: AccountMode = AccountMode.DEFAULT,
@@ -63,13 +63,13 @@ class ModularAccountV2(
             AccountMode.EIP7702 -> "0x"
             AccountMode.DEFAULT -> {
                 // ERC-4337 mode: use factory to create account
-                val factory = factoryAddress ?: Address(DEFAULT_FACTORY_ADDRESS)
+                val factory = factoryAddress ?: DEFAULT_FACTORY_ADDRESS
                 concatHex(
                     listOf(
-                        factory.address,
+                        factory,
                         FunctionEncoder.encode(
                             Function(
-                                "createAccount",
+                                "createSemiModularAccount",
                                 listOf(
                                     org.web3j.abi.datatypes.Address(forAddress),
                                     Uint256(0) // salt
@@ -118,19 +118,12 @@ class ModularAccountV2(
     }
 
     override suspend fun getNonce(): BigInteger {
-        return when (mode) {
-            AccountMode.EIP7702 -> {
-                super.getNonce(buildFullNonceKey(
-                    nonceKey = 0,
-                    entityId = DEFAULT_OWNER_ENTITY_ID,
-                    isGlobalValidation = true,
-                    isDeferredAction = false
-                ))
-            }
-            AccountMode.DEFAULT -> {
-                super.getNonce()
-            }
-        }
+        return super.getNonce(buildFullNonceKey(
+            nonceKey = 0,
+            entityId = DEFAULT_OWNER_ENTITY_ID,
+            isGlobalValidation = true,
+            isDeferredAction = false
+        ))
     }
 
     private fun buildFullNonceKey(
@@ -168,8 +161,7 @@ class ModularAccountV2(
             )
         )
     }
-    
-    @OptIn(ExperimentalStdlibApi::class)
+
     override suspend fun signMessage(msg: ByteArray): ByteArray {
         return packUOSignature(signer.signMessage(msg))
     }
@@ -178,10 +170,23 @@ class ModularAccountV2(
         return signer
     }
     
-    override suspend fun getFactoryAddress(): Address {
-        return factoryAddress ?: Address(DEFAULT_FACTORY_ADDRESS)
+    override suspend fun getFactoryAddress(): String? {
+        if (mode != AccountMode.DEFAULT) {
+            return null
+        }
+
+        return factoryAddress ?: DEFAULT_FACTORY_ADDRESS
     }
-    
+
+    override suspend fun getFactoryData(initCode: String?): String? {
+        if (mode != AccountMode.DEFAULT) {
+            return null
+        }
+
+        val resolvedInitCode = initCode ?: getInitCode()
+        return parseFactoryAddressFromAccountInitCode(resolvedInitCode).second
+    }
+
     override suspend fun encodeExecute(target: Address, value: BigInteger, data: ByteArray): String {
         val function = Function(
             "execute",
@@ -217,5 +222,23 @@ class ModularAccountV2(
 
     private fun packUOSignature(sig: ByteArray): ByteArray {
         return byteArrayOf(0xFF.toByte(), 0x00) + sig
+    }
+
+    /**
+     * Parses the factory address and factory calldata from the provided account initialization code (initCode).
+     * val (address, calldata) = parseFactoryAddressFromAccountInitCode("0xAddressCalldata");
+     *
+     * @param {Hex} initCode The initialization code from which to parse the factory address and calldata
+     * @returns {[Address, Hex]} A tuple containing the parsed factory address and factory calldata
+     */
+    private fun parseFactoryAddressFromAccountInitCode(initCode: String): Pair<String, String> {
+        if (initCode.length < 44) {
+            return Pair("0x", "0x")
+        }
+
+        val factoryAddress = "0x${initCode.substring(2, 42)}"
+        val factoryCalldata = "0x${initCode.substring(42)}"
+        
+        return Pair(factoryAddress, factoryCalldata)
     }
 }

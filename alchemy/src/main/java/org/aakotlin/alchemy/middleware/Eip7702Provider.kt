@@ -6,10 +6,13 @@
  */
 package org.aakotlin.alchemy.middleware
 
+import org.aakotlin.alchemy.account.ModularAccountV2
 import org.aakotlin.core.PaymasterDataParams
 import org.aakotlin.core.Policy
+import org.aakotlin.core.auth.AccountMode
 import org.aakotlin.core.client.Erc7677Client
 import org.aakotlin.core.middleware.defaults.default7702UserOpSigner
+import org.aakotlin.core.middleware.defaults.defaultUserOpSigner
 import org.aakotlin.core.provider.SmartAccountProvider
 import org.aakotlin.core.util.await
 import org.aakotlin.core.util.toUserOperationRequest
@@ -56,5 +59,11 @@ fun SmartAccountProvider.erc7677Middleware(policyId: String): SmartAccountProvid
         struct
     }
 
-    withUserOperationSigner(default7702UserOpSigner)
+    withUserOperationSigner { client, account, struct, overrides ->
+        if (account is ModularAccountV2 && account.getMode() == AccountMode.EIP7702) {
+            default7702UserOpSigner(client, account, struct, overrides)
+        } else {
+            defaultUserOpSigner(client, account, struct, overrides)
+        }
+    }
 }

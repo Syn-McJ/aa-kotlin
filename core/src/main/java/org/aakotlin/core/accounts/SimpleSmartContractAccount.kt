@@ -24,7 +24,7 @@ import java.math.BigInteger
 open class SimpleSmartContractAccount(
     private val rpcClient: BundlerClient,
     private val entryPoint: EntryPoint? = null,
-    private val factoryAddress: Address,
+    private val factoryAddress: String,
     private val signer: SmartAccountSigner,
     private val chain: Chain,
     private val accountAddress: String? = null,
@@ -50,7 +50,7 @@ open class SimpleSmartContractAccount(
         val encoded = FunctionEncoder.encode(function)
 
         return concatHex(listOf(
-            factoryAddress.address,
+            factoryAddress,
             encoded
         ))
     }
@@ -103,8 +103,12 @@ open class SimpleSmartContractAccount(
         return signer
     }
 
-    override suspend fun getFactoryAddress(): Address {
+    override suspend fun getFactoryAddress(): String {
         return factoryAddress
+    }
+
+    override suspend fun getFactoryData(initCode: String?): String {
+        TODO("Not yet implemented")
     }
 
     override fun getImplementationAddress(): String {

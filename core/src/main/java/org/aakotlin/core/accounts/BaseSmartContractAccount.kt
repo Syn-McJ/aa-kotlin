@@ -129,6 +129,10 @@ abstract class BaseSmartContractAccount(
         return this.entryPoint ?: Defaults.getDefaultEntryPoint(this.chain)
     }
 
+    override suspend fun isAccountDeployed(): Boolean {
+        return this.getDeploymentState() == DeploymentState.DEPLOYED
+    }
+
     internal fun encodeGetSenderAddress(initCode: String): String {
         return FunctionEncoder.encode(
             Function(
@@ -141,10 +145,6 @@ abstract class BaseSmartContractAccount(
                 listOf()
             )
         )
-    }
-
-    private suspend fun isAccountDeployed(): Boolean {
-        return this.getDeploymentState() == DeploymentState.DEPLOYED
     }
 
     private suspend fun getDeploymentState(): DeploymentState {

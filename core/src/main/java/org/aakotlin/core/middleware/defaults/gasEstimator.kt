@@ -15,10 +15,6 @@ val defaultGasEstimator: ClientMiddlewareFn = { client, account, struct, overrid
         overrides.preVerificationGas == null ||
         (is070 && overrides.paymasterVerificationGasLimit == null)
     ) {
-        if (is070) {
-            struct.initCode = null // TODO: is needed for all requests?
-        }
-
         val request = struct.toUserOperationRequest()
         estimates = client.estimateUserOperationGas(
             request,

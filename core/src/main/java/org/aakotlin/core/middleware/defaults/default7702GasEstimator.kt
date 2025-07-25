@@ -23,6 +23,7 @@ suspend fun default7702GasEstimator(
     val implementationAddress = account.getImplementationAddress()
 
     // Note: does not omit the delegation from estimation if the account is already 7702 delegated.
+    struct.initCode = null
     struct.eip7702Auth = Eip7702Auth(
         chainId = "0x0",
         nonce = "0x0",

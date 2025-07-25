@@ -80,7 +80,11 @@ data class UserOperationRequest(
     /** data for paymaster (only if paymaster exists) */
     val paymasterData: String?,
     /** EIP-7702 authorization tuple for account delegation (optional) */
-    var eip7702Auth: Eip7702Auth?
+    var eip7702Auth: Eip7702Auth?,
+    /** account factory, only for new accounts */
+    var factory: String? = null,
+    /** data for account factory (only if account factory exists) */
+    var factoryData: String? = null
 )
 
 // based on @account-abstraction/common

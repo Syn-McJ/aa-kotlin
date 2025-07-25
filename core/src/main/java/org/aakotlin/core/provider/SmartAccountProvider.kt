@@ -127,20 +127,26 @@ open class SmartAccountProvider(
         overrides: UserOperationOverrides?
     ): UserOperationStruct {
         val account = this.account ?: throw IllegalStateException("Account not connected")
+        val uoStruct = UserOperationStruct(
+            initCode = account.getInitCode(),
+            sender = getAddress(),
+            nonce = account.getNonce(),
+            callData = account.encodeExecute(
+                data.target,
+                data.value ?: BigInteger.ZERO,
+                data.data
+            ),
+            signature = account.getDummySignature(),
+            paymasterAndData = "0x",
+        )
+
+        if (getEntryPoint().version == "0.7.0" && !account.isAccountDeployed()) {
+            uoStruct.factory = account.getFactoryAddress()
+            uoStruct.factoryData = account.getFactoryData(uoStruct.initCode)
+        }
 
         return runMiddlewareStack(
-            UserOperationStruct(
-                initCode = account.getInitCode(),
-                sender = getAddress(),
-                nonce = account.getNonce(),
-                callData = account.encodeExecute(
-                    data.target,
-                    data.value ?: BigInteger.ZERO,
-                    data.data
-                ),
-                signature = account.getDummySignature(),
-                paymasterAndData = "0x",
-            ),
+            uoStruct,
             overrides ?: UserOperationOverrides()
         )
     }

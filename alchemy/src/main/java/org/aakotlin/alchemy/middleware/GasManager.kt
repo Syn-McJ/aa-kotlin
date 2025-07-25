@@ -6,8 +6,10 @@
  */
 package org.aakotlin.alchemy.middleware
 
+import org.aakotlin.alchemy.account.ModularAccountV2
 import org.aakotlin.alchemy.provider.AlchemyProvider
 import org.aakotlin.core.Chain
+import org.aakotlin.core.auth.AccountMode
 import org.aakotlin.core.middleware.defaults.default7702GasEstimator
 import org.aakotlin.core.middleware.defaults.defaultGasEstimator
 import org.aakotlin.core.provider.ClientMiddlewareFn
@@ -81,7 +83,15 @@ fun SmartAccountProvider.withAlchemyGasManager(
             fallbackGasEstimator
         } else {
             { client, account, uoStruct, overrides ->
-                default7702GasEstimator(client, account, uoStruct, overrides, defaultGasEstimator)
+                if (account is ModularAccountV2) {
+                    if (account.getMode() == AccountMode.EIP7702) {
+                        default7702GasEstimator(client, account, uoStruct, overrides, defaultGasEstimator)
+                    } else {
+                        uoStruct
+                    }
+                } else {
+                    defaultGasEstimator(client, account, uoStruct, overrides)
+                }
             }
         }
     )

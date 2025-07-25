@@ -61,15 +61,15 @@ data class UIState(
 
 class MainViewModel : ViewModel() {
     companion object {
-        private val chain = Chain.Sepolia // Alchemy token is deployed on Sepolia
+        val chain = Chain.BaseSepolia
 
         private const val JIFFYSCAN_BASE_URL = "https://jiffyscan.xyz/userOpHash/"
-        private const val ALCHEMY_TOKEN_SEPOLIA_ADDRESS = "0xCFf7C6dA719408113DFcb5e36182c6d5aa491443"
+        private const val USDC_TOKEN_ADDRESS = "0xCFf7C6dA719408113DFcb5e36182c6d5aa491443"
 
         // replace with your Alchemy API key
         private const val ALCHEMY_API_KEY = "VL04Y5WbMvKHO05PIKtTsmifkEaz8UYU"
         // replace with your Alchemy gas policy ID
-        private const val ALCHEMY_GAS_POLICY_ID = "fc1342bf-c475-43b8-af42-d7b3cd189e59"
+        private const val ALCHEMY_GAS_POLICY_ID = "6e224b86-72a7-491b-84b4-b5741e337b10"
 
         // replace with your Web3Auth Client ID
         // these IDs are from Web3Auth example
@@ -181,7 +181,7 @@ class MainViewModel : ViewModel() {
         signer.setCredentials(credentials)
         scaProvider = provider.apply { connect(account) }
         alchemyToken = ERC20.load(
-            ALCHEMY_TOKEN_SEPOLIA_ADDRESS,
+            USDC_TOKEN_ADDRESS,
             provider.rpcClient,
             credentials,
             DefaultGasProvider()
@@ -202,7 +202,7 @@ class MainViewModel : ViewModel() {
         val encoded = FunctionEncoder.encode(function)
         return provider.sendUserOperation(
             UserOperationCallData(
-                Address(ALCHEMY_TOKEN_SEPOLIA_ADDRESS),
+                Address(USDC_TOKEN_ADDRESS),
                 Numeric.hexStringToByteArray(encoded),
             )
         ).hash

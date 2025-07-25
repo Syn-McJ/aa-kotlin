@@ -33,5 +33,7 @@ fun UserOperationStruct.toUserOperationRequest(): UserOperationRequest {
         paymasterData = paymasterData,
         paymasterPostOpGasLimit = Numeric.encodeQuantity(paymasterPostOpGasLimit ?: BigInteger.ZERO),
         paymasterVerificationGasLimit = Numeric.encodeQuantity(paymasterVerificationGasLimit ?: BigInteger.ZERO),
+        factory = factory,
+        factoryData = factoryData
     )
 }

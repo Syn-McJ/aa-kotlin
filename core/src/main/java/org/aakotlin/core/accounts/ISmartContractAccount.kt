@@ -86,12 +86,16 @@ interface ISmartContractAccount {
     /**
      * @returns the address of the factory contract for the smart contract account
      */
-    suspend fun getFactoryAddress(): Address
+    suspend fun getFactoryAddress(): String?
+
+    suspend fun getFactoryData(initCode: String?): String?
 
     /**
      * @returns the address of the entry point contract for the smart contract account
      */
     fun getEntryPoint(): EntryPoint
+
+    suspend fun isAccountDeployed(): Boolean
 
     fun getImplementationAddress(): String
 }
