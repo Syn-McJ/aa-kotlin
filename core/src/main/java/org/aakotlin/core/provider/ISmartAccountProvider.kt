@@ -6,16 +6,21 @@
  */
 package org.aakotlin.core.provider
 
-import org.aakotlin.core.Address
 import org.aakotlin.core.SendUserOperationResult
 import org.aakotlin.core.UserOperationCallData
 import org.aakotlin.core.UserOperationOverrides
 import org.aakotlin.core.UserOperationReceipt
 import org.aakotlin.core.UserOperationRequest
 import org.aakotlin.core.UserOperationStruct
-import org.aakotlin.core.client.Erc4337Client
+import org.aakotlin.core.accounts.ISmartContractAccount
+import org.aakotlin.core.client.BundlerClient
 
-typealias ClientMiddlewareFn = suspend (Erc4337Client, UserOperationStruct, UserOperationOverrides) -> UserOperationStruct
+typealias ClientMiddlewareFn = suspend (
+    BundlerClient,
+    ISmartContractAccount,
+    UserOperationStruct,
+    UserOperationOverrides
+) -> UserOperationStruct
 
 interface ISmartAccountProvider {
     /**
@@ -26,12 +31,12 @@ interface ISmartAccountProvider {
     /**
      * @returns the address of the connected account
      */
-    suspend fun getAddress(): Address
+    suspend fun getAddress(): String
 
     /**
      * @returns the address of the smart contract account for the specified signer
      */
-    suspend fun getAddressForSigner(signerAddress: String): Address
+    suspend fun getAddressForSigner(signerAddress: String): String
 
     /**
      * Sends a user operation using the connected account.
@@ -141,8 +146,13 @@ interface ISmartAccountProvider {
      * @param dummyPaymasterDataMiddleware - optional function for overriding the dummy paymaster middleware
      * @returns an update instance of this, which now uses the new middleware
      */
-    fun withPaymasterMiddleware(
-        dummyPaymasterDataMiddleware: ClientMiddlewareFn?,
-        paymasterDataMiddleware: ClientMiddlewareFn?,
-    ): ISmartAccountProvider
+    fun withPaymasterMiddleware(paymasterDataMiddleware: ClientMiddlewareFn?): ISmartAccountProvider
+
+    fun withDummyPaymasterMiddleware(dummyPaymasterDataMiddleware: ClientMiddlewareFn?): ISmartAccountProvider
+
+    /**
+     * Signs the above unsigned user operation struct built
+     * using the account connected to the smart account client
+     */
+    fun withUserOperationSigner(signer: ClientMiddlewareFn) : ISmartAccountProvider
 }

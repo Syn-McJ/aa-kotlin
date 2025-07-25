@@ -6,10 +6,10 @@
  */
 package org.aakotlin.alchemy.account
 
-import org.aakotlin.core.Address
 import org.aakotlin.core.Chain
+import org.aakotlin.core.EntryPoint
 import org.aakotlin.core.accounts.SimpleSmartContractAccount
-import org.aakotlin.core.client.Erc4337Client
+import org.aakotlin.core.client.BundlerClient
 import org.aakotlin.core.signer.SmartAccountSigner
 import org.aakotlin.core.util.concatHex
 import org.web3j.abi.FunctionEncoder
@@ -19,15 +19,15 @@ import org.web3j.abi.datatypes.generated.Uint256
 
 // Alchemy's implementation of erc4337 account
 class LightSmartContractAccount(
-    private val rpcClient: Erc4337Client,
-    private val entryPointAddress: Address? = null,
-    private val factoryAddress: Address,
+    private val rpcClient: BundlerClient,
+    private val entryPoint: EntryPoint? = null,
+    private val factoryAddress: String,
     private val signer: SmartAccountSigner,
     private val chain: Chain,
-    private val accountAddress: Address? = null,
+    private val accountAddress: String? = null,
 ) : SimpleSmartContractAccount(
         rpcClient,
-        entryPointAddress,
+        entryPoint,
         factoryAddress,
         signer,
         chain,
@@ -36,7 +36,7 @@ class LightSmartContractAccount(
     override suspend fun getAccountInitCode(forAddress: String): String {
         return concatHex(
             listOf(
-                factoryAddress.address,
+                factoryAddress,
                 FunctionEncoder.encode(
                     Function(
                         "createAccount",

@@ -68,7 +68,7 @@ class MainFragment : Fragment() {
                 stepText.text = when (state.step) {
                     Step.KEY -> "Fetching your key..."
                     Step.ADDRESS -> "Fetching your smart contract account address..."
-                    Step.READY -> "Your account is ready: ${state.address} (Sepolia network)"
+                    Step.READY -> "Your account is ready: ${state.address} (${MainViewModel.chain.name} network)"
                     Step.MINTING -> "Minting Alchemy tokens..."
                     Step.CONFIRMING -> "Confirming transaction..."
                     Step.DONE -> "Done! Alchemy Token balance: ${state.balance}"

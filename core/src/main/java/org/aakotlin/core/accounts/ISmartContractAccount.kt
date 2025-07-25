@@ -7,6 +7,7 @@
 package org.aakotlin.core.accounts
 
 import org.aakotlin.core.Address
+import org.aakotlin.core.EntryPoint
 import org.aakotlin.core.UserOperationCallData
 import org.aakotlin.core.signer.SmartAccountSigner
 import java.math.BigInteger
@@ -48,12 +49,15 @@ interface ISmartContractAccount {
     suspend fun getNonce(): BigInteger
 
     /**
-     * Returns a signed and prefixed message.
-     *
+     * @returns a signed and prefixed message.
      * @param msg - the message to sign
-     * @returns the signature of the message
      */
     suspend fun signMessage(msg: ByteArray): ByteArray
+
+    /**
+     * @returns the signer associated with this account
+     */
+    fun getSigner(): SmartAccountSigner
 
 //    /**
 //     * If the account is not deployed, it will sign the message and then wrap it in 6492 format
@@ -66,12 +70,12 @@ interface ISmartContractAccount {
     /**
      * @returns the address of the account
      */
-    suspend fun getAddress(): Address
+    suspend fun getAddress(): String
 
     /**
      * @returns the address of the smart contract account for the specified signer
      */
-    suspend fun getAddressForSigner(signerAddress: String): Address
+    suspend fun getAddressForSigner(signerAddress: String): String
 
     /**
      * @returns the smart contract account owner instance if it exists.
@@ -82,10 +86,16 @@ interface ISmartContractAccount {
     /**
      * @returns the address of the factory contract for the smart contract account
      */
-    suspend fun getFactoryAddress(): Address
+    suspend fun getFactoryAddress(): String?
+
+    suspend fun getFactoryData(initCode: String?): String?
 
     /**
      * @returns the address of the entry point contract for the smart contract account
      */
-    fun getEntryPointAddress(): Address
+    fun getEntryPoint(): EntryPoint
+
+    suspend fun isAccountDeployed(): Boolean
+
+    fun getImplementationAddress(): String
 }

@@ -20,7 +20,6 @@ import org.web3j.utils.Numeric
 import java.io.IOException
 import java.math.BigInteger
 
-
 class EthEstimateUserOperationGas: Response<EthEstimateUserOperationGas.EstimateUserOperationGas>() {
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonDeserialize(using = ResponseDeserialiser::class)
@@ -37,7 +36,15 @@ class EthEstimateUserOperationGas: Response<EthEstimateUserOperationGas.Estimate
         val verificationGasLimitStr: String,
         /* Value used by inner account execution */
         @JsonProperty(value = "callGasLimit")
-        val callGasLimitStr: String
+        val callGasLimitStr: String,
+
+        /*
+         * EntryPoint v0.7.0 operations only.
+         * The amount of gas to allocate for the paymaster validation code.
+         * Note: `eth_estimateUserOperationGas` does not return paymasterPostOpGasLimit.
+         */
+        @JsonProperty(value = "paymasterVerificationGasLimit")
+        val paymasterVerificationGasLimitStr: String
     ) {
         val preVerificationGas: BigInteger
             get() = Numeric.decodeQuantity(preVerificationGasStr)
@@ -47,6 +54,9 @@ class EthEstimateUserOperationGas: Response<EthEstimateUserOperationGas.Estimate
 
         val callGasLimit: BigInteger
             get() = Numeric.decodeQuantity(callGasLimitStr)
+
+        val paymasterVerificationGasLimit: BigInteger
+            get() = Numeric.decodeQuantity(paymasterVerificationGasLimitStr)
     }
 
     class ResponseDeserialiser : JsonDeserializer<EstimateUserOperationGas>() {

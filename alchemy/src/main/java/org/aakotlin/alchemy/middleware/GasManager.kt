@@ -6,8 +6,12 @@
  */
 package org.aakotlin.alchemy.middleware
 
+import org.aakotlin.alchemy.account.ModularAccountV2
 import org.aakotlin.alchemy.provider.AlchemyProvider
 import org.aakotlin.core.Chain
+import org.aakotlin.core.auth.AccountMode
+import org.aakotlin.core.middleware.defaults.default7702GasEstimator
+import org.aakotlin.core.middleware.defaults.defaultGasEstimator
 import org.aakotlin.core.provider.ClientMiddlewareFn
 import org.aakotlin.core.provider.ConnectionConfig
 import org.aakotlin.core.provider.ProviderConfig
@@ -15,7 +19,6 @@ import org.aakotlin.core.provider.SmartAccountProvider
 import org.aakotlin.core.util.await
 import org.aakotlin.core.util.toUserOperationRequest
 import org.web3j.utils.Numeric
-import java.math.BigInteger
 
 data class AlchemyGasManagerConfig(
     val policyId: String,
@@ -48,21 +51,21 @@ fun SmartAccountProvider.withAlchemyGasManager(
     gasEstimationOptions: AlchemyGasEstimationOptions? = null
 ) = apply {
     val fallbackFeeDataGetter = gasEstimationOptions?.fallbackFeeDataGetter ?: alchemyFeeEstimator
-    val fallbackGasEstimator = gasEstimationOptions?.fallbackGasEstimator ?: ::defaultGasEstimator
+    val fallbackGasEstimator = gasEstimationOptions?.fallbackGasEstimator ?: defaultGasEstimator
     val disableGasEstimation = gasEstimationOptions?.disableGasEstimation ?: false
 
     withFeeDataGetter(
         if (disableGasEstimation) {
             fallbackFeeDataGetter
         } else {
-            { client, struct, overrides ->
+            { client, account, struct, overrides ->
                 var newMaxFeePerGas = struct.maxFeePerGas ?: 0.toBigInteger()
                 var newMaxPriorityFeePerGas = struct.maxPriorityFeePerGas ?: 0.toBigInteger()
 
                 // but if user is bypassing paymaster to fallback to having the account to pay the gas (one-off override),
                 // we cannot delegate gas estimation to the bundler because paymaster middleware will not be called
                 if (overrides.paymasterAndData == "0x") {
-                    val result = fallbackFeeDataGetter(client, struct, overrides)
+                    val result = fallbackFeeDataGetter(client, account, struct, overrides)
                     newMaxFeePerGas = result.maxFeePerGas ?: newMaxFeePerGas
                     newMaxPriorityFeePerGas = result.maxPriorityFeePerGas ?: newMaxPriorityFeePerGas
                 }
@@ -79,15 +82,15 @@ fun SmartAccountProvider.withAlchemyGasManager(
         if (disableGasEstimation) {
             fallbackGasEstimator
         } else {
-            { client, uoStruct, overrides ->
-                uoStruct.callGasLimit = BigInteger.ZERO
-                uoStruct.preVerificationGas = BigInteger.ZERO
-                uoStruct.verificationGasLimit = BigInteger.ZERO
-
-                if (!overrides.paymasterAndData.isNullOrEmpty()) {
-                    fallbackGasEstimator(client, uoStruct, overrides)
+            { client, account, uoStruct, overrides ->
+                if (account is ModularAccountV2) {
+                    if (account.getMode() == AccountMode.EIP7702) {
+                        default7702GasEstimator(client, account, uoStruct, overrides, defaultGasEstimator)
+                    } else {
+                        uoStruct
+                    }
                 } else {
-                    uoStruct
+                    defaultGasEstimator(client, account, uoStruct, overrides)
                 }
             }
         }
@@ -115,26 +118,25 @@ fun requestPaymasterAndData(
     provider: SmartAccountProvider,
     config: AlchemyGasManagerConfig
 ): SmartAccountProvider = provider.apply {
-    withPaymasterMiddleware(
-        { _, struct, _ ->
-            struct.apply {
-                paymasterAndData = dummyPaymasterAndData(provider.chain.id)
-            }
-        },
-        { client, struct, _ ->
-            val data = (client as AlchemyClient).requestPaymasterAndData(
-                PaymasterAndDataParams(
-                    config.policyId,
-                    provider.getEntryPointAddress().address,
-                    struct.toUserOperationRequest()
-                )
-            ).await().result.paymasterAndData
-
-            struct.apply {
-                paymasterAndData = data
-            }
+    withDummyPaymasterMiddleware { _, _, struct, _ ->
+        struct.apply {
+            paymasterAndData = dummyPaymasterAndData(provider.chain.id)
         }
-    )
+    }
+
+    withPaymasterMiddleware { client, _, struct, _ ->
+        val data = (client as AlchemyClient).requestPaymasterAndData(
+            PaymasterAndDataParams(
+                config.policyId,
+                provider.getEntryPoint().address,
+                struct.toUserOperationRequest()
+            )
+        ).await().result.paymasterAndData
+
+        struct.apply {
+            paymasterAndData = data
+        }
+    }
 }
 
 /**
@@ -149,42 +151,46 @@ fun requestGasAndPaymasterData(
     provider: SmartAccountProvider,
     config: AlchemyGasManagerConfig
 ): SmartAccountProvider = provider.apply {
-    withPaymasterMiddleware(
-        { _, struct, _ ->
-            struct.apply {
-                paymasterAndData = dummyPaymasterAndData(provider.chain.id)
-            }
-        },
-        { client, struct, overrides ->
-            val userOperation = struct.toUserOperationRequest()
-            val feeOverride = FeeOverride(
-                maxFeePerGas = overrides.maxFeePerGas?.let(Numeric::encodeQuantity),
-                maxPriorityFeePerGas = overrides.maxPriorityFeePerGas?.let(Numeric::encodeQuantity),
-                callGasLimit = overrides.callGasLimit?.let(Numeric::encodeQuantity),
-                verificationGasLimit = overrides.verificationGasLimit?.let(Numeric::encodeQuantity),
-                preVerificationGas = overrides.preVerificationGas?.let(Numeric::encodeQuantity)
-            )
+    withDummyPaymasterMiddleware { _, _, struct, _ ->
+        struct.apply {
+            paymasterAndData = dummyPaymasterAndData(provider.chain.id)
+        }
+    }
 
-            val params = PaymasterAndDataParams(
-                config.policyId,
-                provider.getEntryPointAddress().address,
-                userOperation,
-                userOperation.signature,
-                if (feeOverride.isEmpty) null else feeOverride
-            )
-            val result = (client as AlchemyClient).requestGasAndPaymasterAndData(
-                params
-            ).await().result
+    withPaymasterMiddleware { client, _, struct, overrides ->
+        val userOperation = struct.toUserOperationRequest()
+        val feeOverride = FeeOverride(
+            maxFeePerGas = overrides.maxFeePerGas?.let(Numeric::encodeQuantity),
+            maxPriorityFeePerGas = overrides.maxPriorityFeePerGas?.let(Numeric::encodeQuantity),
+            callGasLimit = overrides.callGasLimit?.let(Numeric::encodeQuantity),
+            verificationGasLimit = overrides.verificationGasLimit?.let(Numeric::encodeQuantity),
+            preVerificationGas = overrides.preVerificationGas?.let(Numeric::encodeQuantity)
+        )
 
-            struct.apply {
-                paymasterAndData = result.paymasterAndData
-                callGasLimit = result.callGasLimit
-                verificationGasLimit = result.verificationGasLimit
-                preVerificationGas = result.preVerificationGas
-                maxFeePerGas = result.maxFeePerGas
-                maxPriorityFeePerGas = result.maxPriorityFeePerGas
-            }
-        })
+        val params = PaymasterAndDataParams(
+            config.policyId,
+            provider.getEntryPoint().address,
+            userOperation,
+            userOperation.signature,
+            if (feeOverride.isEmpty) null else feeOverride
+        )
+        val result = (client as AlchemyClient).requestGasAndPaymasterAndData(
+            params
+        ).await().result
+
+        struct.apply {
+            paymasterAndData = result.paymasterAndData
+            callGasLimit = result.callGasLimit
+            verificationGasLimit = result.verificationGasLimit
+            preVerificationGas = result.preVerificationGas
+            maxFeePerGas = result.maxFeePerGas
+            maxPriorityFeePerGas = result.maxPriorityFeePerGas
+            paymaster = result.paymaster
+            paymasterVerificationGasLimit = result.paymasterVerificationGasLimit
+            paymasterPostOpGasLimit = result.paymasterPostOpGasLimit
+            paymasterData = result.paymasterData
+        }
+    }
 }
 
 private fun dummyPaymasterAndData(chainId: Long): String {

@@ -9,7 +9,7 @@ import org.aakotlin.core.util.toUserOperationRequest
 import java.math.BigInteger
 
 fun SmartAccountProvider.withCoinbaseGasManager(connectionConfig: ConnectionConfig) = apply {
-    withGasEstimator { _, uoStruct, overrides ->
+    withGasEstimator { _, _, uoStruct, overrides ->
         uoStruct.apply {
             callGasLimit = overrides.callGasLimit ?: BigInteger.ZERO
             preVerificationGas = overrides.preVerificationGas ?: BigInteger.ZERO
@@ -18,12 +18,12 @@ fun SmartAccountProvider.withCoinbaseGasManager(connectionConfig: ConnectionConf
     }
 
     withPaymasterMiddleware(
-        { _, struct, _ ->
+        { _, _, struct, _ ->
             struct.apply {
                 paymasterAndData = "0xc03aac639bb21233e0139381970328db8bceeb67fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c"
             }
         },
-        { middlewareClient, struct, overrides ->
+        { middlewareClient, _, struct, overrides ->
             struct.apply {
                 callGasLimit = overrides.callGasLimit
                 preVerificationGas = overrides.preVerificationGas
@@ -39,7 +39,7 @@ fun SmartAccountProvider.withCoinbaseGasManager(connectionConfig: ConnectionConf
                 val request = struct.toUserOperationRequest()
                 val result = (middlewareClient as CoinbaseClient).sponsorUserOperation(
                     request,
-                    getEntryPointAddress().address,
+                    getEntryPoint().address,
                 ).await().result
 
                 struct.apply {

@@ -19,7 +19,7 @@ import java.util.concurrent.ScheduledExecutorService
 import kotlin.math.ceil
 import kotlin.math.pow
 
-open class JsonRpc2_Erc4337 : JsonRpc2_0Web3j, Erc4337Client {
+open class JsonRpc2_BundlerClient : JsonRpc2_0Web3j, BundlerClient {
     constructor(web3jService: Web3jService) : super(web3jService)
 
     constructor(
