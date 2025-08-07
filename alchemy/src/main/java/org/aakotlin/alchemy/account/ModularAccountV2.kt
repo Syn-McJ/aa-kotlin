@@ -165,10 +165,6 @@ class ModularAccountV2(
     override suspend fun signMessage(msg: ByteArray): ByteArray {
         return packUOSignature(signer.signMessage(msg))
     }
-
-    override suspend fun getOwner(): SmartAccountSigner? {
-        return signer
-    }
     
     override suspend fun getFactoryAddress(): String? {
         if (mode != AccountMode.DEFAULT) {

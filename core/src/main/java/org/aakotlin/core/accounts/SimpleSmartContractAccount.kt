@@ -99,10 +99,6 @@ open class SimpleSmartContractAccount(
 //        TODO("Not yet implemented")
 //    }
 
-    override suspend fun getOwner(): SmartAccountSigner? {
-        return signer
-    }
-
     override suspend fun getFactoryAddress(): String {
         return factoryAddress
     }

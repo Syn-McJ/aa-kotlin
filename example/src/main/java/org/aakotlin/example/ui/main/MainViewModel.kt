@@ -40,6 +40,11 @@ import org.web3j.utils.Numeric
 import java.math.BigDecimal
 import java.math.BigInteger
 
+enum class AuthMode {
+    WEB3_AUTH,
+    PRIVATE_KEY
+}
+
 enum class Step {
     NOT_STARTED,
     KEY,
@@ -75,8 +80,14 @@ class MainViewModel : ViewModel() {
         // these IDs are from Web3Auth example
         const val WEB3_AUTH_CLIENT_ID = "BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ"
         const val AUTH0_CLIENT_ID = "hUVVf4SEsZT7syOiL0gLU9hFEtm2gQ6O"
+        
+        // Private key that controls the wallet
+        private const val PRIVATE_KEY = "0x394add01e3372e6a2752894d5e502810ae59609e53de4f176cee6098b18e4bc6"
     }
 
+    // Authentication mode - default to hardcoded private key
+    private val authMode: AuthMode = AuthMode.WEB3_AUTH
+    
     private lateinit var web3Auth: Web3Auth
     private var alchemyToken: ERC20? = null
     private var scaProvider: ISmartAccountProvider? = null
@@ -86,9 +97,19 @@ class MainViewModel : ViewModel() {
 
     fun init(web3Auth: Web3Auth) {
         this.web3Auth = web3Auth
+        
+        // If using private key mode, initialize immediately
+        if (authMode == AuthMode.PRIVATE_KEY) {
+            setKeyStateWithPrivateKey(PRIVATE_KEY)
+        }
     }
 
     fun login() {
+        if (authMode == AuthMode.PRIVATE_KEY) {
+            // Already logged in with hardcoded key, do nothing
+            return
+        }
+        
         web3Auth.login(
             LoginParams(
                 Provider.JWT,
@@ -103,6 +124,11 @@ class MainViewModel : ViewModel() {
     }
 
     fun logout() {
+        if (authMode == AuthMode.PRIVATE_KEY) {
+            // Cannot logout with hardcoded key
+            return
+        }
+        
         val logoutCompletableFuture = web3Auth.logout()
         logoutCompletableFuture.whenComplete { _, error ->
             setKeyState(false, error)
@@ -114,6 +140,11 @@ class MainViewModel : ViewModel() {
     }
 
     fun checkSession() {
+        if (authMode == AuthMode.PRIVATE_KEY) {
+            // For private key mode, we're already initialized in init()
+            return
+        }
+        
         web3Auth.initialize().whenComplete { _, error ->
             setKeyState(true, error)
         }
@@ -153,6 +184,33 @@ class MainViewModel : ViewModel() {
             }
         } else {
             _uiState.postValue(_uiState.value?.copy(step = Step.ERROR, error = error.message ?: "Error while fetching key"))
+        }
+    }
+    
+    private fun setKeyStateWithPrivateKey(privateKey: String) {
+        viewModelScope.launch {
+            try {
+                val cleanPrivateKey = if (privateKey.startsWith("0x")) {
+                    privateKey.substring(2)
+                } else {
+                    privateKey
+                }
+                val credentials = Credentials.create(cleanPrivateKey)
+                setupSmartContractAccount(credentials)
+                _uiState.postValue(
+                    _uiState.value?.copy(
+                        step = Step.READY,
+                        address = scaProvider?.getAddress()
+                    )
+                )
+            } catch (ex: Exception) {
+                _uiState.postValue(
+                    _uiState.value?.copy(
+                        step = Step.ERROR,
+                        error = "Failed to import private key: ${ex.message}"
+                    )
+                )
+            }
         }
     }
 

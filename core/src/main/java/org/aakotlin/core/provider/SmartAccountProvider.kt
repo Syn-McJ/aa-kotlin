@@ -92,12 +92,16 @@ open class SmartAccountProvider(
         overrides: UserOperationOverrides?
     ): SendUserOperationResult {
         val uoToSubmit = UserOperationStruct(
-            initCode = uoToDrop.initCode, // TODO
+            initCode = uoToDrop.initCode,
             sender = uoToDrop.sender,
             nonce = Numeric.decodeQuantity(uoToDrop.nonce),
             callData = uoToDrop.callData,
             signature = Numeric.hexStringToByteArray(uoToDrop.signature),
-            paymasterAndData = "0x", // TODO: check for v7 entrypoint
+            paymasterAndData = uoToDrop.paymasterAndData,
+            paymaster = uoToDrop.paymaster,
+            paymasterData = uoToDrop.paymasterData,
+            factory = uoToDrop.factory,
+            factoryData = uoToDrop.factoryData
         )
 
         // Run once to get the fee estimates
@@ -157,15 +161,22 @@ open class SmartAccountProvider(
     ): UserOperationStruct {
         val account = this.account ?: throw IllegalStateException("Account not connected")
 
+        val uoStruct = UserOperationStruct(
+            initCode = account.getInitCode(),
+            sender = getAddress(),
+            nonce = account.getNonce(),
+            callData = account.encodeBatchExecute(data),
+            signature = account.getDummySignature(),
+            paymasterAndData = "0x",
+        )
+
+        if (getEntryPoint().version == "0.7.0" && !account.isAccountDeployed()) {
+            uoStruct.factory = account.getFactoryAddress()
+            uoStruct.factoryData = account.getFactoryData(uoStruct.initCode)
+        }
+
         return runMiddlewareStack(
-            UserOperationStruct(
-                initCode = account.getInitCode(),
-                sender = getAddress(),
-                nonce = account.getNonce(),
-                callData = account.encodeBatchExecute(data),
-                signature = account.getDummySignature(),
-                paymasterAndData = "0x",
-            ),
+            uoStruct,
             overrides ?: UserOperationOverrides()
         )
     }

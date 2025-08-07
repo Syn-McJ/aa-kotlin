@@ -35,16 +35,15 @@ fun SmartAccountProvider.erc7677Middleware(policyId: String): SmartAccountProvid
             struct.paymasterPostOpGasLimit = BigInteger.ZERO
         }
 
-        val result = (client as Erc7677Client).getPaymasterStubData(
-            params = PaymasterDataParams(
-                struct.toUserOperationRequest(),
-                entryPoint.address,
-                Numeric.encodeQuantity(chain.id.toBigInteger()),
-                policy = Policy(
-                    policyId = policyId
-                )
+        val params = PaymasterDataParams(
+            struct.toUserOperationRequest(),
+            entryPoint.address,
+            Numeric.encodeQuantity(chain.id.toBigInteger()),
+            policy = Policy(
+                policyId = policyId
             )
-        ).await().result
+        )
+        val result = (client as Erc7677Client).getPaymasterStubData(params = params).await().result
 
         if (entryPoint.version == "0.6.0") {
             struct.paymasterAndData = result.paymasterAndData
