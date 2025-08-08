@@ -6,6 +6,9 @@
  */
 package org.aakotlin.core.signer
 
+import kotlinx.coroutines.flow.StateFlow
+import org.aakotlin.core.auth.Authorization
+import org.aakotlin.core.auth.AuthorizationSignature
 import org.web3j.crypto.Credentials
 
 /**
@@ -21,9 +24,16 @@ import org.web3j.crypto.Credentials
  */
 interface SmartAccountSigner {
     val signerType: String
-    val credentials: Credentials?
+    val credentials: StateFlow<Credentials?>
 
     suspend fun getAddress(): String
 
     suspend fun signMessage(msg: ByteArray): ByteArray
+
+    /**
+     * Sign an EIP-7702 authorization for account delegation
+     * @param authorization The authorization data to sign
+     * @return SignedAuthorization containing the authorization and signature
+     */
+    suspend fun signAuthorization(authorization: Authorization): AuthorizationSignature
 }

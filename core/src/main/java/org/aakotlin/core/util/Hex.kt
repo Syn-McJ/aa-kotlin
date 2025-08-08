@@ -26,11 +26,14 @@ fun UserOperationStruct.toUserOperationRequest(): UserOperationRequest {
         Numeric.encodeQuantity(preVerificationGas ?: BigInteger.ZERO),
         maxFeePerGas?.let { Numeric.encodeQuantity(it) } ?: "0x",
         maxPriorityFeePerGas?.let { Numeric.encodeQuantity(it) } ?: "0x",
-        paymasterAndData,
-        Numeric.toHexString(signature),
+        paymasterAndData = paymasterAndData,
+        signature = Numeric.toHexString(signature),
+        eip7702Auth = eip7702Auth,
+        paymaster = paymaster,
+        paymasterData = paymasterData,
+        paymasterPostOpGasLimit = Numeric.encodeQuantity(paymasterPostOpGasLimit ?: BigInteger.ZERO),
+        paymasterVerificationGasLimit = Numeric.encodeQuantity(paymasterVerificationGasLimit ?: BigInteger.ZERO),
+        factory = factory,
+        factoryData = factoryData
     )
-}
-
-fun Int.toHex(): String {
-    return "0x" + this.toString(16)
 }

@@ -8,21 +8,18 @@ package org.aakotlin.alchemy.provider
 
 import org.aakotlin.alchemy.SupportedChains
 import org.aakotlin.alchemy.alchemyRpcHttpUrl
-import org.aakotlin.alchemy.middleware.alchemyFeeEstimator
 import org.aakotlin.alchemy.middleware.createAlchemyClient
-import org.aakotlin.core.Address
-import org.aakotlin.core.client.Erc4337Client
+import org.aakotlin.core.client.BundlerClient
 import org.aakotlin.core.provider.ProviderConfig
 import org.aakotlin.core.provider.SmartAccountProvider
 
 class AlchemyProvider(
-    entryPointAddress: Address?,
     config: ProviderConfig,
-) : SmartAccountProvider(createRpcClient(config), null, entryPointAddress, config.chain, config.opts) {
+) : SmartAccountProvider(createRpcClient(config), null, config.chain, config.opts) {
     companion object {
         private lateinit var rpcUrl: String
 
-        internal fun createRpcClient(config: ProviderConfig): Erc4337Client {
+        internal fun createRpcClient(config: ProviderConfig): BundlerClient {
             val chain = SupportedChains[config.chain.id]
                 ?: throw IllegalArgumentException("Unsupported chain id: ${config.chain.id}")
 
@@ -40,9 +37,5 @@ class AlchemyProvider(
 
             return rpcClient
         }
-    }
-
-    init {
-        withGasEstimator(alchemyFeeEstimator)
     }
 }

@@ -10,21 +10,21 @@ import org.aakotlin.core.provider.ClientMiddlewareFn
 import org.aakotlin.core.util.await
 import org.web3j.protocol.core.DefaultBlockParameterName
 
-val alchemyFeeEstimator: ClientMiddlewareFn = { rpcClient, struct, overrides ->
+val alchemyFeeEstimator: ClientMiddlewareFn = { client, account, struct, overrides ->
     if (overrides.maxFeePerGas != null && overrides.maxPriorityFeePerGas != null) {
         struct.apply {
             maxFeePerGas = overrides.maxFeePerGas
             maxPriorityFeePerGas = overrides.maxPriorityFeePerGas
         }
     } else {
-        val block = rpcClient.ethGetBlockByNumber(
+        val block = client.ethGetBlockByNumber(
             DefaultBlockParameterName.LATEST,
             false
         ).await().block
         val baseFeePerGas = block.baseFeePerGas
         val maxPriorityFeePerGasEstimate =
             // it's a fair assumption that if someone is using this Alchemy Middleware, then they are using Alchemy RPC
-            (rpcClient as AlchemyClient).maxPriorityFeePerGas().await().maxPriorityFeePerGas
+            (client as AlchemyClient).maxPriorityFeePerGas().await().maxPriorityFeePerGas
 
         val maxPriorityFeePerGas = overrides.maxPriorityFeePerGas ?: maxPriorityFeePerGasEstimate
 
@@ -33,4 +33,6 @@ val alchemyFeeEstimator: ClientMiddlewareFn = { rpcClient, struct, overrides ->
             this.maxFeePerGas = baseFeePerGas + maxPriorityFeePerGas
         }
     }
+
+    struct
 }

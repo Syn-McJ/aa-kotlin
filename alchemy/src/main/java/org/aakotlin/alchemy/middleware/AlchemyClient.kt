@@ -6,16 +6,17 @@
  */
 package org.aakotlin.alchemy.middleware
 
-import org.aakotlin.core.client.PaymasterAndData
-import org.aakotlin.core.client.Erc4337Client
+import org.aakotlin.core.client.PaymasterData
+import org.aakotlin.core.client.BundlerClient
+import org.aakotlin.core.client.Erc7677Client
 import org.web3j.protocol.core.Request
 
-interface AlchemyClient: Erc4337Client {
+interface AlchemyClient: BundlerClient, Erc7677Client {
     fun maxPriorityFeePerGas(): Request<*, AlchemyMaxPriorityFeePerGas>
 
     fun requestPaymasterAndData(
         params: PaymasterAndDataParams
-    ): Request<*, PaymasterAndData>
+    ): Request<*, PaymasterData>
 
     fun requestGasAndPaymasterAndData(
         params: PaymasterAndDataParams

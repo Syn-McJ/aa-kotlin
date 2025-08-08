@@ -8,6 +8,7 @@ package org.aakotlin.core
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
+import org.aakotlin.core.auth.Eip7702Auth
 import java.math.BigInteger
 
 @JvmInline
@@ -28,6 +29,7 @@ data class UserOperationOverrides(
     val maxPriorityFeePerGas: BigInteger? = null,
     val preVerificationGas: BigInteger? = null,
     val verificationGasLimit: BigInteger? = null,
+    val paymasterVerificationGasLimit: BigInteger? = null,
     val paymasterAndData: String? = null
 )
 
@@ -47,23 +49,42 @@ data class UserOperationRequest(
     /** nonce of the transaction, returned from the entrypoint for this Address */
     val nonce: String,
     /** the initCode for creating the sender if it does not exist yet, otherwise "0x" */
-    val initCode: String,
+    val initCode: String?,
     /** the callData passed to the target */
     val callData: String,
+
     /** Value used by inner account execution */
-    val callGasLimit: String,
+    val callGasLimit: String?,
     /** Actual gas used by the validation of this UserOperation */
-    val verificationGasLimit: String,
+    val verificationGasLimit: String?,
     /** Gas overhead of this UserOperation */
-    val preVerificationGas: String,
+    val preVerificationGas: String?,
     /** Maximum fee per gas (similar to EIP-1559 max_fee_per_gas) */
-    val maxFeePerGas: String,
+    val maxFeePerGas: String?,
     /** Maximum priority fee per gas (similar to EIP-1559 max_priority_fee_per_gas) */
-    val maxPriorityFeePerGas: String,
-    /** Address of paymaster sponsoring the transaction, followed by extra data to send to the paymaster ("0x" for self-sponsored transaction) */
-    val paymasterAndData: String,
+    val maxPriorityFeePerGas: String?,
     /** Data passed into the account along with the nonce during the verification step */
-    val signature: String
+    val signature: String,
+
+    // v6 fields
+    /** Address of paymaster sponsoring the transaction, followed by extra data to send to the paymaster ("0x" for self-sponsored transaction) */
+    val paymasterAndData: String?,
+
+    // v7 fields
+    /** address of paymaster contract, (or empty, if account pays for itself) */
+    val paymaster: String?,
+    /** the amount of gas to allocate for the paymaster validation code */
+    val paymasterVerificationGasLimit: String?,
+    /** the amount of gas to allocate for the paymaster post-operation code */
+    val paymasterPostOpGasLimit: String?,
+    /** data for paymaster (only if paymaster exists) */
+    val paymasterData: String?,
+    /** EIP-7702 authorization tuple for account delegation (optional) */
+    var eip7702Auth: Eip7702Auth?,
+    /** account factory, only for new accounts */
+    var factory: String? = null,
+    /** data for account factory (only if account factory exists) */
+    var factoryData: String? = null
 )
 
 // based on @account-abstraction/common
@@ -74,7 +95,7 @@ class UserOperationStruct(
     /** nonce of the transaction, returned from the entrypoint for this Address */
     var nonce: BigInteger,
     /** the initCode for creating the sender if it does not exist yet, otherwise "0x" */
-    var initCode: String,
+    var initCode: String?,
     /** the callData passed to the target */
     var callData: String,
     /** Value used by inner account execution */
@@ -87,10 +108,28 @@ class UserOperationStruct(
     var maxFeePerGas: BigInteger? = null,
     /** Maximum priority fee per gas (similar to EIP-1559 max_priority_fee_per_gas) */
     var maxPriorityFeePerGas: BigInteger? = null,
-    /** Address of paymaster sponsoring the transaction, followed by extra data to send to the paymaster ("0x" for self-sponsored transaction) */
-    var paymasterAndData: String,
     /** Data passed into the account along with the nonce during the verification step */
-    var signature: ByteArray
+    var signature: ByteArray,
+
+    // v6 fields
+    /** Address of paymaster sponsoring the transaction, followed by extra data to send to the paymaster ("0x" for self-sponsored transaction) */
+    var paymasterAndData: String? = null,
+
+    // v7 fields
+    /** address of paymaster contract, (or empty, if account pays for itself) */
+    var paymaster: String? = null,
+    /** the amount of gas to allocate for the paymaster validation code */
+    var paymasterVerificationGasLimit: BigInteger? = null,
+    /** the amount of gas to allocate for the paymaster post-operation code */
+    var paymasterPostOpGasLimit: BigInteger? = null,
+    /** data for paymaster (only if paymaster exists) */
+    var paymasterData: String? = null,
+    /** account factory, only for new accounts */
+    var factory: String? = null,
+    /** data for account factory (only if account factory exists) */
+    var factoryData: String? = null,
+    /** EIP-7702 authorization tuple for account delegation (optional) */
+    var eip7702Auth: Eip7702Auth? = null
 )
 
 data class UserOperationReceipt @JsonCreator constructor(
@@ -121,4 +160,21 @@ data class UserOperationReceipt @JsonCreator constructor(
     /** In case of revert, this is the revert reason. */
     @JsonProperty(value = "reason")
     val reason: String?
+)
+
+data class EntryPoint(
+    val address: String,
+    val version: String,
+    val chain: Chain
+)
+
+data class Policy(
+    val policyId: String
+)
+
+data class PaymasterDataParams(
+    val userOperation: UserOperationRequest,
+    val entryPoint: String,
+    val chainId: String,
+    val policy: Policy?
 )

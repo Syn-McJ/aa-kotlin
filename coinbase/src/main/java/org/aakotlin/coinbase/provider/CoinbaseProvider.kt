@@ -8,19 +8,17 @@ package org.aakotlin.coinbase.provider
 
 import org.aakotlin.coinbase.SupportedChains
 import org.aakotlin.coinbase.coinbasePaymasterAndBundlerUrl
-import org.aakotlin.core.Address
-import org.aakotlin.core.client.Erc4337Client
+import org.aakotlin.core.client.BundlerClient
 import org.aakotlin.core.provider.ProviderConfig
 import org.aakotlin.core.provider.SmartAccountProvider
 
 class CoinbaseProvider(
-    entryPointAddress: Address?,
-    config: ProviderConfig,
-) : SmartAccountProvider(createRpcClient(config), null, entryPointAddress, config.chain, config.opts) {
+    config: ProviderConfig
+) : SmartAccountProvider(createRpcClient(config), null, config.chain, config.opts) {
     companion object {
         private lateinit var rpcUrl: String
 
-        internal fun createRpcClient(config: ProviderConfig): Erc4337Client {
+        internal fun createRpcClient(config: ProviderConfig): BundlerClient {
             val chain = SupportedChains[config.chain.id]
                 ?: throw IllegalArgumentException("Unsupported chain id: ${config.chain.id}")
 

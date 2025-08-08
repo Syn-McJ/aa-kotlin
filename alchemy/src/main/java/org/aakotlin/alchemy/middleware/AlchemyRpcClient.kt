@@ -6,14 +6,15 @@
  */
 package org.aakotlin.alchemy.middleware
 
-import org.aakotlin.core.client.PaymasterAndData
-import org.aakotlin.core.client.JsonRpc2_Erc4337
+import org.aakotlin.core.PaymasterDataParams
+import org.aakotlin.core.client.PaymasterData
+import org.aakotlin.core.client.JsonRpc2_BundlerClient
 import org.web3j.protocol.Web3jService
 import org.web3j.protocol.core.Request
 
 class AlchemyRpcClient(
     web3jService: Web3jService
-): JsonRpc2_Erc4337(web3jService), AlchemyClient {
+): JsonRpc2_BundlerClient(web3jService), AlchemyClient {
     override fun maxPriorityFeePerGas(): Request<*, AlchemyMaxPriorityFeePerGas> {
         return Request(
             "rundler_maxPriorityFeePerGas",
@@ -25,12 +26,12 @@ class AlchemyRpcClient(
 
     override fun requestPaymasterAndData(
         params: PaymasterAndDataParams
-    ): Request<*, PaymasterAndData> {
+    ): Request<*, PaymasterData> {
         return Request(
             "alchemy_requestPaymasterAndData",
             listOf(params),
             web3jService,
-            PaymasterAndData::class.java
+            PaymasterData::class.java
         )
     }
 
@@ -42,6 +43,17 @@ class AlchemyRpcClient(
             listOf(params),
             web3jService,
             AlchemyGasAndPaymasterAndData::class.java
+        )
+    }
+
+    override fun getPaymasterStubData(
+        params: PaymasterDataParams
+    ): Request<*, PaymasterData> {
+        return Request(
+            "pm_getPaymasterStubData",
+            listOf(params.userOperation, params.entryPoint, params.chainId, params.policy),
+            web3jService,
+            PaymasterData::class.java
         )
     }
 }

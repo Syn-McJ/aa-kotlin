@@ -9,10 +9,10 @@ package org.aakotlin.core.client
 import org.aakotlin.core.Chain
 import org.web3j.protocol.http.HttpService
 
-fun createPublicErc4337Client(
+fun createBundlerClient(
     rpcUrl: String,
     headers: Map<String, String> = emptyMap(),
-): Erc4337Client {
+): BundlerClient {
     val version = Chain::class.java.`package`.implementationVersion
     val service =
         HttpService(rpcUrl).apply {
@@ -20,5 +20,5 @@ fun createPublicErc4337Client(
             addHeaders(headers)
         }
 
-    return JsonRpc2_Erc4337(service)
+    return JsonRpc2_BundlerClient(service)
 }
