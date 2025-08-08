@@ -29,7 +29,7 @@ class UtilsTest {
                 signature = Numeric.hexStringToByteArray("0xd16f93b584fbfdc03a5ee85914a1f29aa35c44fea5144c387ee1040a3c1678252bf323b7e9c3e9b4dfd91cca841fc522f4d3160a1e803f2bf14eb5fa037aae4a1b"),
                 verificationGasLimit = Numeric.decodeQuantity("0x0114c2"),
             ),
-            Address(entrypointAddress),
+            EntryPoint(entrypointAddress, "0.6.0", Chain.Polygon),
             80001L
         )
 
