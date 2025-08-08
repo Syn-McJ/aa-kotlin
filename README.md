@@ -1,15 +1,12 @@
-# AA-Kotlin
+# AA Kotlin SDK
 
-### Implementation of [ERC-4337: Account Abstraction](https://eips.ethereum.org/EIPS/eip-4337) in Kotlin
+This library implements AA for mobile, built with Kotlin.
 
-For a high-level overview, read [this blog post](https://crewapp.xyz/posts/account-abstraction-mobile/).  
-For Swift library, [see this](https://github.com/syn-mcj/aa-swift).
-
-## Installation
+## Gradle dependency
 
 ```
-implementation("org.aakotlin:core:0.1.4")
-implementation("org.aakotlin:alchemy:0.1.4")
+implementation("org.aakotlin:core:0.2.0")
+implementation("org.aakotlin:alchemy:0.2.0")
 ```
 
 ## Getting started
