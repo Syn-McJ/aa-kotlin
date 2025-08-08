@@ -11,13 +11,19 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class).configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
-    implementation("org.web3j:core:4.13.0")
+    implementation("org.web3j:core:4.12.0")
 
     // Tests
     testImplementation("org.testng:testng:6.9.6")
