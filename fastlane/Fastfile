@@ -1,0 +1,31 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build and distribute to Firebase App Distribution"
+  lane :firebase_distribute do |options|
+    qa_group = (options[:qa_group] || "self").to_s
+
+    gradle(task: ":example:clean")
+    gradle(task: ":example:bundle", build_type: "Release")
+
+    # Prefer AAB; fall back to APK if AAB is not found
+    aab_candidates = Dir["example/build/outputs/bundle/release/*.aab"]
+    apk_candidates = Dir["example/build/outputs/apk/release/*.apk"]
+
+    artifact_path = if !aab_candidates.empty?
+                      aab_candidates.max_by { |f| File.mtime(f) }
+                    elsif !apk_candidates.empty?
+                      apk_candidates.max_by { |f| File.mtime(f) }
+                    else
+                      UI.user_error!("No build artifact found (AAB or APK) under example/build/outputs")
+                    end
+
+    firebase_app_distribution(
+      app: ENV["FIREBASE_APP_ID_ANDROID"],
+      service_credentials_file: ENV["FIREBASE_CREDENTIALS_FILE"] || "firebase_credentials.json",
+      release_notes: options[:release_notes] || "Distributed via CI",
+      groups: qa_group,
+      app_path: artifact_path
+    )
+  end
+end
