@@ -25,7 +25,7 @@ class BaseSmartContractAccountTest {
     fun `encodeGetSenderAddress should return correct hex`() = runTest {
         val scAccount = SimpleSmartContractAccount(
             rpcClient = rpcClient,
-            factoryAddress = Address("0x000000893A26168158fbeaDD9335Be5bC96592E2"),
+            factoryAddress = "0x000000893A26168158fbeaDD9335Be5bC96592E2",
             signer = signer,
             chain = Chain.BaseSepolia,
             accountAddress = null

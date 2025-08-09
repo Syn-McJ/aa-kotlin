@@ -11,11 +11,11 @@
   </parent>
   
   <groupId>org.aakotlin</groupId>
-  <artifactId>core</artifactId>
+  <artifactId>coinbase</artifactId>
   <version>0.2.0</version>
-  <name>core</name>
+  <name>coinbase</name>
   <packaging>jar</packaging>
-  
+
   <build>
     <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
   </build>
@@ -31,6 +31,12 @@
       <groupId>org.jetbrains.kotlinx</groupId>
       <artifactId>kotlinx-coroutines-jdk8</artifactId>
       <version>1.7.3</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.aakotlin</groupId>
+      <artifactId>core</artifactId>
+      <version>0.2.0</version>
       <scope>compile</scope>
     </dependency>
     <dependency>

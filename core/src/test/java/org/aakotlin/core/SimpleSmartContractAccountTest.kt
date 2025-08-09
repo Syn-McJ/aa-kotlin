@@ -24,8 +24,7 @@ class SimpleSmartContractAccountTest {
     }
     private val scAccount = SimpleSmartContractAccount(
         rpcClient = rpcClient,
-        entryPointAddress = null,
-        factoryAddress = Address("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
+        factoryAddress = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
         signer = signer,
         chain = Chain.Polygon,
         accountAddress = null,
