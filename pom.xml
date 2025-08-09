@@ -6,6 +6,7 @@
     <groupId>org.aakotlin</groupId>
     <artifactId>aakotlin</artifactId>
     <version>0.2.0</version>
+    <name>aakotlin</name>
     <packaging>pom</packaging>
 
     <modules>
