@@ -6,13 +6,13 @@
   <parent>
       <groupId>org.aakotlin</groupId>
       <artifactId>aakotlin</artifactId>
-      <version>0.2.0</version>
+      <version>0.2.1</version>
       <relativePath>../pom.xml</relativePath>
   </parent>
   
   <groupId>org.aakotlin</groupId>
   <artifactId>alchemy</artifactId>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
   <name>alchemy</name>
   <packaging>jar</packaging>
 
@@ -36,7 +36,7 @@
     <dependency>
       <groupId>org.aakotlin</groupId>
       <artifactId>core</artifactId>
-      <version>0.2.0</version>
+      <version>0.2.1</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
