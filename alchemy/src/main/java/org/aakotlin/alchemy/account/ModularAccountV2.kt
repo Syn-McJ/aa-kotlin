@@ -198,17 +198,23 @@ class ModularAccountV2(
     }
     
     override suspend fun encodeBatchExecute(txs: List<UserOperationCallData>): String {
-        // ModularAccountV2 supports batch execution through executeBatch function
-        val targets = txs.map { org.web3j.abi.datatypes.Address(it.target.address) }
-        val values = txs.map { Uint256(it.value ?: BigInteger.ZERO) }
-        val datas = txs.map { org.web3j.abi.datatypes.DynamicBytes(it.data) }
+        val tuples = txs.map { tx ->
+            org.web3j.abi.datatypes.DynamicStruct(
+                listOf(
+                    org.web3j.abi.datatypes.Address(tx.target.address),
+                    Uint256(tx.value ?: BigInteger.ZERO),
+                    org.web3j.abi.datatypes.DynamicBytes(tx.data)
+                )
+            )
+        }
         
         val function = Function(
             "executeBatch",
             listOf(
-                org.web3j.abi.datatypes.DynamicArray(org.web3j.abi.datatypes.Address::class.java, targets),
-                org.web3j.abi.datatypes.DynamicArray(Uint256::class.java, values),
-                org.web3j.abi.datatypes.DynamicArray(org.web3j.abi.datatypes.DynamicBytes::class.java, datas)
+                org.web3j.abi.datatypes.DynamicArray(
+                    org.web3j.abi.datatypes.DynamicStruct::class.java,
+                    tuples
+                )
             ),
             listOf()
         )
