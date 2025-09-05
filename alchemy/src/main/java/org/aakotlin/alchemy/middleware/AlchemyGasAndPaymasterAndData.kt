@@ -75,11 +75,11 @@ class AlchemyGasAndPaymasterAndData: Response<AlchemyGasAndPaymasterAndData.GasA
         val maxPriorityFeePerGas: BigInteger
             get() = Numeric.decodeQuantity(maxPriorityFeePerGasStr)
 
-        val paymasterVerificationGasLimit: BigInteger
-            get() = Numeric.decodeQuantity(paymasterVerificationGasLimitStr)
+        val paymasterVerificationGasLimit: BigInteger?
+            get() = paymasterVerificationGasLimitStr?.let { Numeric.decodeQuantity(it) }
 
-        val paymasterPostOpGasLimit: BigInteger
-            get() = Numeric.decodeQuantity(paymasterPostOpGasLimitStr)
+        val paymasterPostOpGasLimit: BigInteger?
+            get() = paymasterPostOpGasLimitStr?.let { Numeric.decodeQuantity(it) }
     }
 
     class ResponseDeserialiser : JsonDeserializer<GasAndPaymasterAndData>() {
