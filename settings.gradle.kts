@@ -1,9 +1,9 @@
 pluginManagement {
     plugins {
-        id("com.google.devtools.ksp") version "1.9.25-1.0.20"
-        kotlin("jvm") version "1.9.25"
+        id("com.google.devtools.ksp") version "2.1.0-1.0.29"
+        kotlin("jvm") version "2.1.0"
         id("com.android.library") version "8.2.0-rc02"
-        id("org.jetbrains.kotlin.android") version "1.9.25"
+        id("org.jetbrains.kotlin.android") version "2.1.0"
         id("com.android.application") version "8.12.2"
     }
     repositories {
