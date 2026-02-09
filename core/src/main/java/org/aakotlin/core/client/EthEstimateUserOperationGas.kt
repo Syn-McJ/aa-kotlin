@@ -44,7 +44,7 @@ class EthEstimateUserOperationGas: Response<EthEstimateUserOperationGas.Estimate
          * Note: `eth_estimateUserOperationGas` does not return paymasterPostOpGasLimit.
          */
         @JsonProperty(value = "paymasterVerificationGasLimit")
-        val paymasterVerificationGasLimitStr: String
+        val paymasterVerificationGasLimitStr: String?
     ) {
         val preVerificationGas: BigInteger
             get() = Numeric.decodeQuantity(preVerificationGasStr)
@@ -55,8 +55,8 @@ class EthEstimateUserOperationGas: Response<EthEstimateUserOperationGas.Estimate
         val callGasLimit: BigInteger
             get() = Numeric.decodeQuantity(callGasLimitStr)
 
-        val paymasterVerificationGasLimit: BigInteger
-            get() = Numeric.decodeQuantity(paymasterVerificationGasLimitStr)
+        val paymasterVerificationGasLimit: BigInteger?
+            get() = paymasterVerificationGasLimitStr?.let { Numeric.decodeQuantity(it) }
     }
 
     class ResponseDeserialiser : JsonDeserializer<EstimateUserOperationGas>() {

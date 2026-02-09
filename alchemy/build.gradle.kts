@@ -4,16 +4,16 @@ plugins {
 }
 
 group = "org.aakotlin"
-version = "0.2.0"
+version = "0.2.2"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class).configureEach {
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "21"
     }
 }
 
@@ -25,7 +25,7 @@ dependencies {
     implementation(project(":core"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
-    implementation("org.web3j:core:4.12.0")
+    implementation("org.web3j:core:5.0.2")
 
     // Tests
     testImplementation("org.testng:testng:6.9.6")

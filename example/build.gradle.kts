@@ -27,11 +27,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "21"
     }
     packaging {
         resources {
@@ -65,8 +65,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
 
     implementation("com.github.Web3Auth:web3auth-android-sdk:7.1.0")
-    implementation("org.web3j:core:4.12.0")
-    implementation("org.web3j:contracts:4.12.0")
+    implementation("org.web3j:core:5.0.2")
+    implementation("org.web3j:contracts:5.0.2")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
