@@ -11,12 +11,6 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class).configureEach {
-    kotlinOptions {
-        jvmTarget = "21"
-    }
-}
-
 repositories {
     mavenCentral()
 }

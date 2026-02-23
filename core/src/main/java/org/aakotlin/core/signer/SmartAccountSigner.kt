@@ -31,6 +31,12 @@ interface SmartAccountSigner {
     suspend fun signMessage(msg: ByteArray): ByteArray
 
     /**
+     * Sign a raw hash without any prefix (used for EIP-712 typed data, EIP-7702, etc.)
+     * The caller is responsible for constructing the correct digest.
+     */
+    suspend fun signHash(hash: ByteArray): ByteArray
+
+    /**
      * Sign an EIP-7702 authorization for account delegation
      * @param authorization The authorization data to sign
      * @return SignedAuthorization containing the authorization and signature

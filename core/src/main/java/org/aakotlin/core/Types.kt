@@ -159,7 +159,16 @@ data class UserOperationReceipt @JsonCreator constructor(
     val success: String,
     /** In case of revert, this is the revert reason. */
     @JsonProperty(value = "reason")
-    val reason: String?
+    val reason: String?,
+    /** Optional transaction receipt payload returned by bundlers. */
+    @JsonProperty(value = "receipt")
+    val receipt: UserOperationTransactionReceipt? = null
+)
+
+data class UserOperationTransactionReceipt @JsonCreator constructor(
+    /** On-chain transaction hash that included the UserOperation. */
+    @JsonProperty(value = "transactionHash")
+    val transactionHash: String? = null
 )
 
 data class EntryPoint(

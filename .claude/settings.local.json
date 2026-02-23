@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.alchemy.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(chmod:*)",
+      "Bash(./gradlew:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(find:*)",
+      "WebFetch(domain:viem.sh)",
+      "Bash(npm install)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(/Users/andrei/dev/crewup/aakotlin/curl-eip7702-test.sh)",
+      "Bash(/Users/andrei/dev/crewup/aakotlin/curl-aa20-test.sh)",
+      "Bash(/Users/andrei/dev/crewup/aakotlin/curl-aa20-exact.sh)",
+      "Bash(grep:*)",
+      "Bash(echo:*)",
+      "Bash(kotlinc:*)",
+      "Bash(swift build)",
+      "Bash(xcodebuild:*)"
+    ],
+    "deny": []
+  }
+}
