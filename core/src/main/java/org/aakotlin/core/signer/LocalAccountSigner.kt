@@ -53,13 +53,25 @@ class LocalAccountSigner : SmartAccountSigner {
 
         return withContext(Dispatchers.IO) {
             val signature = Sign.signPrefixedMessage(msg, credentials.ecKeyPair)
-            val sig = ByteArray(65)
-            System.arraycopy(signature.r, 0, sig, 0, 32)
-            System.arraycopy(signature.s, 0, sig, 32, 32)
-            System.arraycopy(signature.v, 0, sig, 64, 1)
-
-            sig
+            assembleSignature(signature)
         }
+    }
+
+    override suspend fun signHash(hash: ByteArray): ByteArray {
+        val credentials = credentials.value ?: throw IllegalStateException("Credentials not set")
+
+        return withContext(Dispatchers.IO) {
+            val signature = Sign.signMessage(hash, credentials.ecKeyPair, false)
+            assembleSignature(signature)
+        }
+    }
+
+    private fun assembleSignature(signature: Sign.SignatureData): ByteArray {
+        val sig = ByteArray(65)
+        System.arraycopy(signature.r, 0, sig, 0, 32)
+        System.arraycopy(signature.s, 0, sig, 32, 32)
+        System.arraycopy(signature.v, 0, sig, 64, 1)
+        return sig
     }
 
     override suspend fun signAuthorization(authorization: Authorization): AuthorizationSignature {
@@ -72,16 +84,15 @@ class LocalAccountSigner : SmartAccountSigner {
             val messageHash = org.web3j.crypto.Hash.sha3(encodedData)
             
             // EIP-7702 uses raw message signing without prefix
-            val signature = Sign.signMessage(messageHash, credentials.ecKeyPair, false)
-            
+            val sig = assembleSignature(Sign.signMessage(messageHash, credentials.ecKeyPair, false))
+
             // Convert v to yParity (v - 27), following aa-sdk implementation
-            val vValue = signature.v[0].toInt() and 0xFF // Convert to unsigned int
-            val yParityValue = vValue - 27
-            val yParity = "0x${yParityValue.toString(16)}"
+            val vValue = sig[64].toInt() and 0xFF
+            val yParity = "0x${(vValue - 27).toString(16)}"
 
             AuthorizationSignature(
-                r = Numeric.toHexString(signature.r),
-                s = Numeric.toHexString(signature.s),
+                r = Numeric.toHexString(sig.copyOfRange(0, 32)),
+                s = Numeric.toHexString(sig.copyOfRange(32, 64)),
                 yParity = yParity
             )
         }
